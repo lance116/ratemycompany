@@ -674,17 +674,6 @@ export const baseCompanies: Company[] = [
     reviews: []
   },
   {
-    id: 60,
-    name: "VMware",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/2/2f/VMware_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Cloud infrastructure and virtualization software",
-    tags: ["Virtualization", "Cloud", "Enterprise", "Infrastructure"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
     id: 61,
     name: "ServiceNow",
     logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/ServiceNow_logo.svg",
@@ -725,17 +714,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "Identity and access management platform",
     tags: ["Identity", "Security", "Authentication", "Enterprise"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 65,
-    name: "Toast",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Toast_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Restaurant technology and point-of-sale platform",
-    tags: ["Restaurant Tech", "POS", "FinTech", "SaaS"],
     pay: "N/A",
     reviews: []
   },
@@ -791,17 +769,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "Video game developer and publisher",
     tags: ["Gaming", "League of Legends", "Esports", "Development"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 71,
-    name: "Bungie",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Bungie_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Video game developer and publisher",
-    tags: ["Gaming", "Destiny", "Halo", "Development"],
     pay: "N/A",
     reviews: []
   },
@@ -934,17 +901,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "Digital banking and financial services platform",
     tags: ["FinTech", "Banking", "Digital", "Mobile"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 84,
-    name: "SoFi",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/SoFi_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Personal finance and lending platform",
-    tags: ["FinTech", "Lending", "Banking", "Personal Finance"],
     pay: "N/A",
     reviews: []
   },
@@ -1103,17 +1059,6 @@ export const baseCompanies: Company[] = [
     reviews: []
   },
   {
-    id: 99,
-    name: "Millennium",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Millennium_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Global investment management firm",
-    tags: ["Hedge Fund", "Investment Management", "Finance", "Global"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
     id: 100,
     name: "AMD",
     logo: "/amd.png",
@@ -1136,39 +1081,6 @@ export const baseCompanies: Company[] = [
     reviews: []
   },
   {
-    id: 102,
-    name: "Micron Technology",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Micron_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Memory and storage solutions company",
-    tags: ["Memory", "Storage", "Semiconductors", "Hardware"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 103,
-    name: "ASML",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/ASML_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Semiconductor equipment and lithography systems",
-    tags: ["Semiconductors", "Equipment", "Lithography", "Manufacturing"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 104,
-    name: "Arm",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Arm_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Semiconductor and software design company",
-    tags: ["CPU", "Semiconductors", "Design", "Mobile"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
     id: 105,
     name: "GitHub",
     logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/GitHub_logo.svg",
@@ -1187,39 +1099,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "DevOps platform and code collaboration tool",
     tags: ["DevOps", "Git", "CI/CD", "Development"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 107,
-    name: "HashiCorp",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/HashiCorp_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Infrastructure automation and cloud tooling",
-    tags: ["DevOps", "Infrastructure", "Cloud", "Automation"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 108,
-    name: "DigitalOcean",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/DigitalOcean_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Cloud computing and infrastructure platform",
-    tags: ["Cloud", "Infrastructure", "VPS", "Hosting"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 109,
-    name: "Fastly",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Fastly_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Edge cloud platform and CDN services",
-    tags: ["CDN", "Edge Computing", "Performance", "Cloud"],
     pay: "N/A",
     reviews: []
   },

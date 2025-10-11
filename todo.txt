@@ -1,0 +1,9 @@
+make it so that companies can contact you to add their company there. you have to approve it
+
+implement a startup leaderboard
+
+implement an overall leaderboard
+
+figure out a way for startup and big tech people to both be able to rank and play
+
+while making sure the actual best company is #1.
