@@ -11,6 +11,7 @@ const Vote = () => {
   const [currentPair, setCurrentPair] = useState<[Company, Company] | null>(null);
   const [isVoting, setIsVoting] = useState(false);
   const [votes, setVotes] = useState(0);
+  const [winnerPosition, setWinnerPosition] = useState<'left' | 'right' | null>(null);
 
   useEffect(() => {
     const loadedCompanies = getCompanies();
@@ -18,9 +19,40 @@ const Vote = () => {
     setCurrentPair(getRandomPair(loadedCompanies));
   }, []);
 
-  const getRandomPair = (companiesList: Company[]) => {
-    const shuffled = [...companiesList].sort(() => 0.5 - Math.random());
+  const getRandomPair = (companiesList: Company[], excludeIds: (string | number)[] = []) => {
+    const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
+    const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
     return [shuffled[0], shuffled[1]] as [Company, Company];
+  };
+
+  const getNextChallenger = (companiesList: Company[], excludeIds: (string | number)[]) => {
+    const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
+    const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
+    return shuffled[0];
+  };
+
+  const handleDontKnow = () => {
+    if (!currentPair) return;
+    
+    const [leftCompany, rightCompany] = currentPair;
+    
+    if (winnerPosition === null) {
+      // At start - replace both companies with new ones
+      const newPair = getRandomPair(companies);
+      setCurrentPair(newPair);
+    } else {
+      // Mid-game - keep the winner, replace the challenger
+      const updatedWinner = companies.find(company => company.id === (winnerPosition === 'left' ? leftCompany.id : rightCompany.id));
+      const newChallenger = getNextChallenger(companies, [updatedWinner?.id || '']);
+      
+      if (updatedWinner && newChallenger) {
+        if (winnerPosition === 'left') {
+          setCurrentPair([updatedWinner, newChallenger]);
+        } else {
+          setCurrentPair([newChallenger, updatedWinner]);
+        }
+      }
+    }
   };
 
   const handleVote = async (winner: Company) => {
@@ -55,8 +87,36 @@ const Vote = () => {
     // Simulate API call delay for better UX
     await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Get new pair from updated companies
-    setCurrentPair(getRandomPair(updatedCompanies));
+    // Winner-stays logic: winner stays in same position, get new challenger
+    // Always determine where the winner was and update position
+    const winnerWasLeft = winner.id === leftCompany.id;
+    const lockedPosition = winnerWasLeft ? 'left' : 'right';
+    
+    if (winnerPosition === null) {
+      // First vote - set winner's position
+      console.log('FIRST VOTE - Winner was on:', lockedPosition, 'Winner:', winner.name);
+      setWinnerPosition(lockedPosition);
+    } else {
+      // Subsequent votes - update winner's position if it changed
+      console.log('SUBSEQUENT VOTE - Winner was on:', lockedPosition, 'Winner:', winner.name, 'Previous position:', winnerPosition);
+      setWinnerPosition(lockedPosition);
+    }
+    
+    // Get updated winner and new challenger
+    const updatedWinner = updatedCompanies.find(company => company.id === winner.id);
+    const newChallenger = getNextChallenger(updatedCompanies, [winner.id]);
+    
+    if (updatedWinner && newChallenger) {
+      // Winner stays in their current position
+      if (lockedPosition === 'left') {
+        console.log('PLACING WINNER ON LEFT - Winner:', updatedWinner.name, 'Challenger:', newChallenger.name);
+        setCurrentPair([updatedWinner, newChallenger]);
+      } else {
+        console.log('PLACING WINNER ON RIGHT - Winner:', updatedWinner.name, 'Challenger:', newChallenger.name);
+        setCurrentPair([newChallenger, updatedWinner]);
+      }
+    }
+    
     setIsVoting(false);
   };
 
@@ -189,6 +249,17 @@ const Vote = () => {
               VS
             </div>
           </div>
+        </div>
+
+        {/* Don't Know Button */}
+        <div className="text-center mt-6">
+          <Button 
+            variant="outline" 
+            onClick={handleDontKnow}
+            className="text-sm"
+          >
+            I don't know.
+          </Button>
         </div>
 
         <div className="text-center mt-8">
