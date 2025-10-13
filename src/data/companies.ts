@@ -454,17 +454,6 @@ export const baseCompanies: Company[] = [
     reviews: []
   },
   {
-    id: 40,
-    name: "Baidu",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/15/Baidu_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Chinese search engine and AI company",
-    tags: ["Search", "AI", "China", "Autonomous Driving"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
     id: 41,
     name: "Tencent",
     logo: "https://upload.wikimedia.org/wikipedia/commons/9/9c/Tencent_Logo.svg",
@@ -472,17 +461,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "Chinese technology and gaming conglomerate",
     tags: ["Gaming", "Social Media", "China", "WeChat"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 42,
-    name: "Alibaba",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/16/Alibaba_Group_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Chinese e-commerce and cloud computing company",
-    tags: ["E-commerce", "Cloud", "China", "FinTech"],
     pay: "N/A",
     reviews: []
   },
@@ -670,28 +648,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "Web performance and security services",
     tags: ["CDN", "Security", "DNS", "Web Performance"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 61,
-    name: "ServiceNow",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/ServiceNow_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Cloud computing platform for digital workflows",
-    tags: ["Cloud", "Workflow", "Enterprise", "Automation"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 62,
-    name: "Workday",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Workday_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Enterprise cloud applications for finance and HR",
-    tags: ["Enterprise", "HR", "Finance", "Cloud"],
     pay: "N/A",
     reviews: []
   },
@@ -1099,17 +1055,6 @@ export const baseCompanies: Company[] = [
     elo: 1600,
     description: "DevOps platform and code collaboration tool",
     tags: ["DevOps", "Git", "CI/CD", "Development"],
-    pay: "N/A",
-    reviews: []
-  },
-  {
-    id: 110,
-    name: "Elastic",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Elastic_logo.svg",
-    rating: 0,
-    elo: 1600,
-    description: "Search and analytics engine platform",
-    tags: ["Search", "Analytics", "Elasticsearch", "Data"],
     pay: "N/A",
     reviews: []
   },

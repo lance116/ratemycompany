@@ -12,22 +12,52 @@ const Vote = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [votes, setVotes] = useState(0);
   const [winnerPosition, setWinnerPosition] = useState<'left' | 'right' | null>(null);
+  const [completedMatchups, setCompletedMatchups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadedCompanies = getCompanies();
     setCompanies(loadedCompanies);
-    setCurrentPair(getRandomPair(loadedCompanies));
+    setCurrentPair(getRandomPair(loadedCompanies, [], new Set()));
   }, []);
 
-  const getRandomPair = (companiesList: Company[], excludeIds: (string | number)[] = []) => {
+  // Helper function to create a matchup key (sorted by ID to ensure consistency)
+  const createMatchupKey = (company1: Company, company2: Company): string => {
+    const [id1, id2] = [company1.id, company2.id].sort((a, b) => a - b);
+    return `${id1}-${id2}`;
+  };
+
+  const getRandomPair = (companiesList: Company[], excludeIds: (string | number)[] = [], completedMatchups: Set<string> = new Set()) => {
     const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
+    
+    // Try to find a pair that hasn't been matched before
     const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
+    
+    for (let i = 0; i < shuffled.length; i++) {
+      for (let j = i + 1; j < shuffled.length; j++) {
+        const matchupKey = createMatchupKey(shuffled[i], shuffled[j]);
+        if (!completedMatchups.has(matchupKey)) {
+          return [shuffled[i], shuffled[j]] as [Company, Company];
+        }
+      }
+    }
+    
+    // If all possible pairs have been completed, return any random pair
     return [shuffled[0], shuffled[1]] as [Company, Company];
   };
 
-  const getNextChallenger = (companiesList: Company[], excludeIds: (string | number)[]) => {
+  const getNextChallenger = (companiesList: Company[], excludeIds: (string | number)[], winner: Company, completedMatchups: Set<string> = new Set()) => {
     const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
     const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
+    
+    // Try to find a challenger that hasn't faced the winner before
+    for (const company of shuffled) {
+      const matchupKey = createMatchupKey(winner, company);
+      if (!completedMatchups.has(matchupKey)) {
+        return company;
+      }
+    }
+    
+    // If all companies have faced the winner, return any available company
     return shuffled[0];
   };
 
@@ -38,12 +68,12 @@ const Vote = () => {
     
     if (winnerPosition === null) {
       // At start - replace both companies with new ones
-      const newPair = getRandomPair(companies);
+      const newPair = getRandomPair(companies, [], completedMatchups);
       setCurrentPair(newPair);
     } else {
       // Mid-game - keep the winner, replace the challenger
       const updatedWinner = companies.find(company => company.id === (winnerPosition === 'left' ? leftCompany.id : rightCompany.id));
-      const newChallenger = getNextChallenger(companies, [updatedWinner?.id || '']);
+      const newChallenger = getNextChallenger(companies, [updatedWinner?.id || ''], updatedWinner!, completedMatchups);
       
       if (updatedWinner && newChallenger) {
         if (winnerPosition === 'left') {
@@ -63,6 +93,11 @@ const Vote = () => {
     
     const [leftCompany, rightCompany] = currentPair;
     const loser = winner.id === leftCompany.id ? rightCompany : leftCompany;
+    
+    // Record this matchup as completed
+    const matchupKey = createMatchupKey(winner, loser);
+    setCompletedMatchups(prev => new Set([...prev, matchupKey]));
+    console.log('Recorded completed matchup:', matchupKey, `${winner.name} vs ${loser.name}`);
     
     // Calculate new ELO ratings
     const { winnerNewRating, loserNewRating } = calculateEloChange(winner.elo, loser.elo);
@@ -102,9 +137,10 @@ const Vote = () => {
       setWinnerPosition(lockedPosition);
     }
     
-    // Get updated winner and new challenger
+    // Get updated winner and new challenger (avoiding completed matchups)
     const updatedWinner = updatedCompanies.find(company => company.id === winner.id);
-    const newChallenger = getNextChallenger(updatedCompanies, [winner.id]);
+    const newCompletedMatchups = new Set([...completedMatchups, matchupKey]);
+    const newChallenger = getNextChallenger(updatedCompanies, [winner.id], updatedWinner!, newCompletedMatchups);
     
     if (updatedWinner && newChallenger) {
       // Winner stays in their current position
