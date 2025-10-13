@@ -18,23 +18,18 @@ const App = () => {
   const [showAuraPopup, setShowAuraPopup] = useState(false);
 
   useEffect(() => {
-    // Check if this is the user's first visit
-    const hasVisitedBefore = localStorage.getItem('hasVisitedBefore');
+    // Show the popup on every page reload
+    console.log('Page loaded, setting timer for popup');
+    const timer = setTimeout(() => {
+      console.log('Timer fired, showing popup');
+      setShowAuraPopup(true);
+    }, 1000);
     
-    if (!hasVisitedBefore) {
-      // Show the popup after a short delay to ensure the page has loaded
-      const timer = setTimeout(() => {
-        setShowAuraPopup(true);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
+    return () => clearTimeout(timer);
   }, []);
 
   const handleCloseAuraPopup = () => {
     setShowAuraPopup(false);
-    // Mark that the user has visited before
-    localStorage.setItem('hasVisitedBefore', 'true');
   };
 
   return (

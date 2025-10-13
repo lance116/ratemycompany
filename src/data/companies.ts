@@ -1145,6 +1145,94 @@ export const baseCompanies: Company[] = [
     tags: ["Containers", "DevOps", "Development", "Platform"],
     pay: "N/A",
     reviews: []
+  },
+  {
+    id: 114,
+    name: "Autodesk",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/4/4a/Autodesk_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "3D design, engineering and entertainment software",
+    tags: ["CAD", "3D Design", "Engineering", "Software"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 115,
+    name: "Anthropic",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Anthropic_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "AI safety and research company",
+    tags: ["AI", "Safety", "Research", "Claude"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 116,
+    name: "Perplexity",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Perplexity_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "AI-powered search and answer engine",
+    tags: ["AI", "Search", "Answers", "LLM"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 117,
+    name: "XAi",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/XAi_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "AI research and development company",
+    tags: ["AI", "Research", "Grok", "X"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 118,
+    name: "Intuit",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Intuit_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "Financial software and services company",
+    tags: ["Finance", "Tax Software", "QuickBooks", "TurboTax"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 119,
+    name: "CrowdStrike",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/CrowdStrike_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "Cybersecurity and endpoint protection platform",
+    tags: ["Cybersecurity", "Endpoint Protection", "Threat Intelligence", "Cloud"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 120,
+    name: "Nokia",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Nokia_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "Telecommunications and networking equipment company",
+    tags: ["Telecommunications", "5G", "Networking", "Mobile"],
+    pay: "N/A",
+    reviews: []
+  },
+  {
+    id: 121,
+    name: "Ericsson",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7a/Ericsson_logo.svg",
+    rating: 0,
+    elo: 1600,
+    description: "Telecommunications and networking solutions",
+    tags: ["Telecommunications", "5G", "Networking", "Mobile Networks"],
+    pay: "N/A",
+    reviews: []
   }
 ];
 
