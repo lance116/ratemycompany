@@ -322,6 +322,18 @@ begin
 
   submitter := coalesce(submitted_by, auth.uid());
 
+  if (
+    select count(*)
+    from public.matchups m
+    where m.created_at > now() - interval '90 seconds'
+      and (
+        m.company_a in (company_a, company_b)
+        or m.company_b in (company_a, company_b)
+      )
+  ) >= 40 then
+    raise exception 'Too many recent votes for this matchup. Please try again later.';
+  end if;
+
   insert into public.company_elo (company_id)
     values (company_a)
     on conflict on constraint company_elo_pkey do nothing;
@@ -356,6 +368,9 @@ begin
 
   new_a := a_rating + k_factor * (score_a - exp_a);
   new_b := b_rating + k_factor * (score_b - exp_b);
+
+  new_a := least(2200, greatest(800, new_a));
+  new_b := least(2200, greatest(800, new_b));
 
   update public.company_elo as ce
     set rating = new_a,
