@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PayStats } from "@/components/ui/pay-stats";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Sparkles, Star, Trophy } from "lucide-react";
+import { Hash, Sparkles, Star, Trophy } from "lucide-react";
 import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
 
 type CompanyPair = [LeaderboardCompany, LeaderboardCompany];
@@ -39,6 +39,7 @@ const Vote = () => {
     animationDone: false,
     rpcDone: false,
   });
+  const [winnerHighlight, setWinnerHighlight] = useState<string | null>(null);
 
   useEffect(() => {
     if (companies.length < 2) {
@@ -148,6 +149,7 @@ const Vote = () => {
 
     const newPair = getRandomPair(companyPool, [], completedMatchups);
     setEloDiffs({});
+    setWinnerHighlight(null);
     setCurrentPair(newPair);
   };
 
@@ -159,6 +161,7 @@ const Vote = () => {
     setIsVoting(true);
     setVotes(prev => prev + 1);
     interactionGateRef.current = { animationDone: false, rpcDone: false };
+    setWinnerHighlight(winner.id);
 
     const releaseGate = () => {
       const gate = interactionGateRef.current;
@@ -205,13 +208,16 @@ const Vote = () => {
       targetWinner: winnerNewRating,
       targetLoser: loserNewRating,
       onComplete: () => {
-        setEloDiffs({});
-        setCurrentPair(nextPair);
         interactionGateRef.current = {
           ...interactionGateRef.current,
           animationDone: true,
         };
         releaseGate();
+        setTimeout(() => {
+          setEloDiffs({});
+          setCurrentPair(nextPair);
+          setWinnerHighlight(null);
+        }, 80);
       },
     });
 
@@ -275,48 +281,67 @@ const Vote = () => {
       <Card
         key={company.id}
         className={cn(
-          "w-full cursor-pointer border border-transparent bg-card/80 transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-xl",
-          isVoting && "pointer-events-none opacity-70"
+          "group relative w-full cursor-pointer overflow-hidden border border-border/40 bg-card/90 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:border-primary/40 hover:shadow-2xl",
+          winnerHighlight === company.id && "md:-translate-y-4 md:shadow-primary/30 border-primary/50"
         )}
         onClick={() => handleVote(company)}
       >
-        <CardContent className="p-6 text-center">
-          <div className="mx-auto mb-5 flex h-32 w-32 items-center justify-center rounded-xl bg-muted/50 backdrop-blur">
-            <img
-              src={logo}
-              alt={company.name}
-              className="h-20 w-20 object-contain"
-            />
+        <CardContent className="relative flex flex-col items-center gap-4 p-6 text-center">
+          <div className="relative w-full">
+            <div
+              className={cn(
+                "mx-auto h-44 w-full max-w-xs overflow-hidden rounded-2xl bg-muted/40 shadow-inner transition duration-500",
+                winnerHighlight === company.id
+                  ? "bg-muted/25 shadow-primary/40"
+                  : "group-hover:bg-muted/20 group-hover:shadow-primary/30"
+              )}
+            >
+              <img
+                src={logo}
+                alt={company.name}
+                className="h-full w-full object-contain object-center transition-transform duration-500 ease-out group-hover:scale-105"
+              />
+            </div>
           </div>
-          <h3 className="text-lg md:text-2xl font-bold text-foreground mb-2">
+          <h3 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
             {company.name}
           </h3>
-          <div className="mb-4 flex items-center justify-center space-x-4 text-sm font-medium text-muted-foreground">
-            <div className="flex items-center space-x-1">
-              <Trophy className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-foreground">{currentRating}</span>
-              {ratingDiff !== 0 && (
-                <span
-                  className={cn(
-                    "text-xs font-semibold",
-                    ratingDiff > 0 ? "text-emerald-500" : "text-rose-500"
-                  )}
-                >
-                  {ratingDiff > 0 ? "+" : ""}
-                  {ratingDiff}
+          <div className="flex items-center justify-center space-x-4 text-sm font-medium text-muted-foreground">
+            <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 shadow-sm transition group-hover:bg-muted/80">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <Trophy className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Elo</span>
+                <span className="text-base font-semibold text-foreground">
+                  {currentRating}
                 </span>
-              )}
+                {ratingDiff !== 0 && (
+                  <span
+                    className={cn(
+                      "text-xs font-semibold transition-colors duration-500",
+                      ratingDiff > 0 ? "text-emerald-500" : "text-rose-500"
+                    )}
+                  >
+                    {ratingDiff > 0 ? "+" : ""}
+                    {ratingDiff}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex items-center space-x-1">
-              <Star className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-foreground">
-                {company.averageReviewScore
-                  ? company.averageReviewScore.toFixed(1)
-                  : "N/A"}
+            <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 shadow-sm transition group-hover:bg-muted/80">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                <Star className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">Rank</span>
+              <span className="text-base font-semibold text-foreground">
+                #{company.rank}
               </span>
             </div>
           </div>
-          <PayStats pay={company.payDisplay} />
+          <div className="mt-2 w-full">
+            <PayStats pay={company.payDisplay} className="justify-center text-sm" />
+          </div>
         </CardContent>
       </Card>
     );

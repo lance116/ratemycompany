@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { PayStats } from "@/components/ui/pay-stats";
 import { Star, Trophy, Medal, Award } from "lucide-react";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const defaultLogo = "https://placehold.co/120x120?text=Logo";
 
@@ -56,6 +57,9 @@ const Leaderboard = () => {
       podiumRank?: number;
       wrapperClass?: string;
       cardClass?: string;
+      cardHeightClass?: string;
+      logoBoxClass?: string;
+      pedestalClass?: string;
     }
   ) => {
     const logo = company.logoUrl ?? defaultLogo;
@@ -63,62 +67,85 @@ const Leaderboard = () => {
       company.averageReviewScore !== null ? company.averageReviewScore.toFixed(1) : "N/A";
 
     const reviewCountLabel = `${company.reviewCount} review${company.reviewCount === 1 ? "" : "s"}`;
-    const { podiumRank, wrapperClass = "", cardClass = "" } = options ?? {};
+    const {
+      podiumRank,
+      wrapperClass = "",
+      cardClass = "",
+      cardHeightClass = "",
+      logoBoxClass = "h-24 w-24",
+      pedestalClass = "h-2",
+    } = options ?? {};
 
     return (
       <Link
         to={`/company/${company.id}`}
-        className={`flex-1 max-w-xs ${wrapperClass}`}
+        className={cn("flex-1 basis-0 max-w-xs", wrapperClass)}
         key={company.id}
       >
-        <Card
-          className={[
-            "transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-2",
-            podiumRank === 1 && "border-gold bg-gradient-to-b from-gold/20 to-gold/10 shadow-gold/30 transform scale-105",
-            podiumRank === 2 && "border-silver bg-gradient-to-b from-silver/20 to-silver/10 shadow-silver/20",
-            podiumRank === 3 && "border-bronze bg-gradient-to-b from-bronze/20 to-bronze/10 shadow-bronze/20",
-            cardClass || "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        >
-          <CardContent className="p-6 text-center">
-            <div className="mb-4">
-              {podiumRank ? (
-                <div className="flex flex-col items-center">
-                  {getRankIcon(podiumRank)}
-                  <span className="text-2xl font-bold mt-1">{`#${podiumRank}`}</span>
+        <div className="flex h-full flex-col justify-end">
+          <Card
+            className={cn(
+              "flex flex-col border-2 bg-card/90 backdrop-blur transition-all duration-300 hover:shadow-xl",
+              podiumRank === 1 && "border-gold shadow-gold/40",
+              podiumRank === 2 && "border-silver shadow-silver/40",
+              podiumRank === 3 && "border-bronze shadow-bronze/40",
+              cardClass,
+              cardHeightClass
+            )}
+          >
+            <CardContent className="flex flex-1 flex-col items-center justify-between p-6 text-center">
+              <div className="mb-4">
+                {podiumRank ? (
+                  <div className="flex flex-col items-center">
+                    {getRankIcon(podiumRank)}
+                    <span className="text-2xl font-bold mt-1">{`#${podiumRank}`}</span>
+                  </div>
+                ) : (
+                  <Badge variant="outline" className="text-sm">
+                    #{displayRank}
+                  </Badge>
+                )}
+              </div>
+              <div
+                className={cn("mx-auto flex items-center justify-center rounded-lg bg-muted/50", logoBoxClass)}
+              >
+                <img
+                  src={logo}
+                  alt={company.name}
+                  className="h-[78%] w-[78%] object-contain"
+                />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-lg font-bold text-foreground">
+                  {company.name}
+                </h3>
+                <div className="flex items-center justify-center space-x-2 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <Trophy className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">{company.elo}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">{reviewRating}</span>
+                  </div>
                 </div>
-              ) : (
-                <Badge variant="outline" className="text-sm">
-                  #{displayRank}
-                </Badge>
+                <div className="text-xs text-muted-foreground">{reviewCountLabel}</div>
+                <PayStats pay={company.payDisplay} />
+              </div>
+            </CardContent>
+          </Card>
+          {podiumRank && (
+            <div
+              className={cn(
+                "mt-3 hidden rounded-t-md md:block",
+                pedestalClass,
+                podiumRank === 1 && "bg-gradient-to-r from-gold/80 via-gold to-gold/80",
+                podiumRank === 2 && "bg-gradient-to-r from-silver/70 via-silver to-silver/70",
+                podiumRank === 3 && "bg-gradient-to-r from-bronze/70 via-bronze to-bronze/70"
               )}
-            </div>
-            <div className={`mx-auto flex items-center justify-center rounded-md bg-muted/40 ${podiumRank === 1 ? "h-28 w-28" : "h-24 w-24"}`}>
-              <img
-                src={logo}
-                alt={company.name}
-                className="h-20 w-20 object-contain"
-              />
-            </div>
-            <h3 className="text-lg font-bold text-foreground mt-4 mb-1">
-              {company.name}
-            </h3>
-            <div className="flex items-center justify-center space-x-2 mb-3 text-sm">
-              <div className="flex items-center space-x-1">
-                <Trophy className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-foreground">{company.elo}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Star className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-foreground">{reviewRating}</span>
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground mb-2">{reviewCountLabel}</div>
-            <PayStats pay={company.payDisplay} />
-          </CardContent>
-        </Card>
+            />
+          )}
+        </div>
       </Link>
     );
   };
@@ -138,18 +165,42 @@ const Leaderboard = () => {
         <div className="mb-12">
           <div className="flex flex-col items-center justify-center space-y-4 md:flex-row md:items-end md:space-x-6 md:space-y-0">
             {[
-              { company: podium[1], rank: 2, wrapperClass: "md:order-1 md:translate-y-6" },
-              { company: podium[0], rank: 1, wrapperClass: "md:order-2 md:-translate-y-4", cardClass: "md:pb-8" },
-              { company: podium[2], rank: 3, wrapperClass: "md:order-3 md:translate-y-10" },
+              {
+                company: podium[1],
+                rank: 2,
+                options: {
+                  podiumRank: 2,
+                  wrapperClass: "md:order-1",
+                  cardHeightClass: "md:min-h-[360px]",
+                  logoBoxClass: "h-24 w-24 md:h-24 md:w-24",
+                  pedestalClass: "md:h-3",
+                },
+              },
+              {
+                company: podium[0],
+                rank: 1,
+                options: {
+                  podiumRank: 1,
+                  wrapperClass: "md:order-2",
+                  cardHeightClass: "md:min-h-[420px]",
+                  logoBoxClass: "h-28 w-28 md:h-28 md:w-28",
+                  pedestalClass: "md:h-5",
+                },
+              },
+              {
+                company: podium[2],
+                rank: 3,
+                options: {
+                  podiumRank: 3,
+                  wrapperClass: "md:order-3",
+                  cardHeightClass: "md:min-h-[340px]",
+                  logoBoxClass: "h-20 w-20 md:h-20 md:w-20",
+                  pedestalClass: "md:h-2",
+                },
+              },
             ]
               .filter(slot => slot.company)
-              .map(slot =>
-                renderCompanyCard(slot.company!, slot.rank, {
-                  podiumRank: slot.rank,
-                  wrapperClass: slot.wrapperClass,
-                  cardClass: slot.cardClass,
-                })
-              )}
+              .map(slot => renderCompanyCard(slot.company!, slot.rank, slot.options))}
           </div>
         </div>
 

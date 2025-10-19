@@ -77,16 +77,14 @@ export const LineChart: React.FC<LineChartProps> = ({
         cy={y}
         r="4"
         fill="hsl(var(--primary))"
-        className="hover:r-6 transition-all duration-200"
+        className="transition-all duration-200 hover:r-6"
       />
     );
   });
 
-  // Format timestamp for display
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString();
-  };
+  const firstLabel = data[0]?.label ?? "Start";
+  const lastLabel =
+    data.length > 1 ? data[data.length - 1]?.label ?? "Now" : null;
 
   const yTicks =
     singlePointY
@@ -124,13 +122,13 @@ export const LineChart: React.FC<LineChartProps> = ({
         })}
         
         {/* X-axis labels */}
-        {data.length > 1 && !singlePointX && (
+        {data.length > 1 && !singlePointX && firstLabel && lastLabel && (
           <>
             <text x={padding} y={height - 5} textAnchor="start" className="text-xs fill-muted-foreground">
-              {formatTime(minX)}
+              {firstLabel}
             </text>
             <text x={width - padding} y={height - 5} textAnchor="end" className="text-xs fill-muted-foreground">
-              {formatTime(maxX)}
+              {lastLabel}
             </text>
           </>
         )}

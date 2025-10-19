@@ -137,9 +137,9 @@ const CompanyDetails = () => {
   const historyData = useMemo(
     () =>
       history.map((entry, index) => ({
-        x: new Date(entry.createdAt).getTime(),
+        x: index + 1,
         y: entry.rating,
-        label: `Match ${index + 1}`,
+        label: index === 0 ? "Start" : index === history.length - 1 ? "Now" : `Update ${index + 1}`,
       })),
     [history]
   );
