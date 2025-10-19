@@ -182,7 +182,7 @@ const Leaderboard = () => {
                   {company.name}
                 </h3>
                 <div className="h-12 flex items-center justify-center">
-                  <div className="flex items-center justify-center gap-3 text-sm">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 text-sm">
                     <div className="flex items-center gap-1">
                       <Trophy className="h-4 w-4 text-primary" />
                       <span className="font-semibold text-foreground">Elo: {company.elo}</span>
