@@ -255,9 +255,9 @@ begin
 end;
 $$;
 
--- Views -----------------------------------------------------------------------
 
-create or replace view public.company_leaderboard as
+create or replace view public.company_leaderboard
+with (security_invoker = true) as
 select
   c.id,
   c.name,
@@ -308,7 +308,8 @@ left join lateral (
   limit 1
 ) latest on true;
 
-create or replace view public.company_reviews_with_meta as
+create or replace view public.company_reviews_with_meta
+with (security_invoker = true) as
 select
   r.id,
   r.company_id,
@@ -669,26 +670,47 @@ for each row execute procedure public.handle_new_user();
 -- Grants ----------------------------------------------------------------------
 
 grant usage on schema public to anon, authenticated;
+grant usage on schema public to service_role;
+
 grant select on public.companies, public.company_elo, public.matchups, public.elo_history to anon, authenticated;
+grant select on public.companies, public.company_elo, public.matchups, public.elo_history to service_role;
+
 grant select on public.company_leaderboard, public.company_reviews_with_meta to anon, authenticated;
-grant select on public.profiles to anon, authenticated;
+grant select on public.company_leaderboard, public.company_reviews_with_meta to service_role;
+
+grant select on public.profiles to authenticated;
+grant select on public.profiles to service_role;
+
 grant insert, update, delete on public.reviews to authenticated;
+grant insert, update, delete on public.reviews to service_role;
+
 grant select on public.review_reactions to anon, authenticated;
+grant select on public.review_reactions to service_role;
+
 grant insert, delete on public.review_reactions to authenticated;
+grant insert, delete on public.review_reactions to service_role;
 
 -- Row Level Security ----------------------------------------------------------
 
 alter table public.companies enable row level security;
 drop policy if exists "Public read companies" on public.companies;
+drop policy if exists "Authenticated read companies" on public.companies;
 create policy "Public read companies" on public.companies
   for select
-  using (true);
+  using (
+    current_user = 'postgres'
+    or coalesce(auth.role(), 'anon') in ('anon', 'authenticated', 'service_role')
+  );
 
 alter table public.company_elo enable row level security;
 drop policy if exists "Public read elo" on public.company_elo;
+drop policy if exists "Authenticated read elo" on public.company_elo;
 create policy "Public read elo" on public.company_elo
   for select
-  using (true);
+  using (
+    current_user = 'postgres'
+    or coalesce(auth.role(), 'anon') in ('anon', 'authenticated', 'service_role')
+  );
 drop policy if exists "Vote updates elo" on public.company_elo;
 create policy "Vote updates elo" on public.company_elo
   for update
@@ -707,9 +729,13 @@ create policy "Vote inserts elo" on public.company_elo
 
 alter table public.matchups enable row level security;
 drop policy if exists "Public read matchups" on public.matchups;
+drop policy if exists "Authenticated read matchups" on public.matchups;
 create policy "Public read matchups" on public.matchups
   for select
-  using (true);
+  using (
+    current_user = 'postgres'
+    or coalesce(auth.role(), 'anon') in ('anon', 'authenticated', 'service_role')
+  );
 drop policy if exists "Service role writes matchups" on public.matchups;
 create policy "Service role writes matchups" on public.matchups
   using (auth.role() = 'service_role')
@@ -738,9 +764,13 @@ create policy "Votes insert matchups" on public.matchups
 
 alter table public.elo_history enable row level security;
 drop policy if exists "Public read elo history" on public.elo_history;
+drop policy if exists "Authenticated read elo history" on public.elo_history;
 create policy "Public read elo history" on public.elo_history
   for select
-  using (true);
+  using (
+    current_user = 'postgres'
+    or coalesce(auth.role(), 'anon') in ('anon', 'authenticated', 'service_role')
+  );
 drop policy if exists "Votes insert elo history" on public.elo_history;
 create policy "Votes insert elo history" on public.elo_history
   for insert
@@ -757,9 +787,16 @@ create policy "Own profile read/write" on public.profiles
 
 alter table public.reviews enable row level security;
 drop policy if exists "Public read published reviews" on public.reviews;
+drop policy if exists "Authenticated read published reviews" on public.reviews;
 create policy "Public read published reviews" on public.reviews
   for select
-  using (status = 'published');
+  using (
+    status = 'published'
+    and (
+      current_user = 'postgres'
+      or coalesce(auth.role(), 'anon') in ('anon', 'authenticated', 'service_role')
+    )
+  );
 drop policy if exists "Users manage own reviews" on public.reviews;
 create policy "Users manage own reviews" on public.reviews
   for insert
@@ -794,9 +831,13 @@ create policy "Admins delete reviews" on public.reviews
 
 alter table public.review_reactions enable row level security;
 drop policy if exists "Public read reactions" on public.review_reactions;
+drop policy if exists "Authenticated read reactions" on public.review_reactions;
 create policy "Public read reactions" on public.review_reactions
   for select
-  using (true);
+  using (
+    current_user = 'postgres'
+    or coalesce(auth.role(), 'anon') in ('anon', 'authenticated', 'service_role')
+  );
 drop policy if exists "Users manage reactions" on public.review_reactions;
 create policy "Users manage reactions" on public.review_reactions
   using (auth.uid() = user_id)
@@ -807,7 +848,12 @@ create policy "Users manage reactions" on public.review_reactions
 alter default privileges in schema public
 grant select on tables to anon, authenticated;
 alter default privileges in schema public
+grant select on tables to service_role;
+
+alter default privileges in schema public
 grant insert on tables to authenticated;
+alter default privileges in schema public
+grant insert on tables to service_role;
 
 -- Automatic seeding of company elo -------------------------------------------
 
