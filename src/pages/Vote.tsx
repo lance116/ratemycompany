@@ -257,7 +257,7 @@ const Vote = () => {
           )}
         </section>
 
-        <section className="mt-4 sm:mt-6 flex flex-1 flex-col justify-center">
+        <section className="mt-3 sm:mt-6 flex flex-1 flex-col justify-center">
           <div className="rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6">
             <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4">
               <CompanyCard
