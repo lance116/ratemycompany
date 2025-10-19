@@ -421,7 +421,7 @@ const CompanyCard = ({
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl h-16 flex items-center justify-center">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl h-20 flex items-center justify-center">
               {company.name}
             </h2>
 
@@ -445,11 +445,11 @@ const CompanyCard = ({
         </div>
 
         {company.tags.length > 0 && (
-          <div className="hidden sm:flex flex-wrap gap-1 min-h-6 mt-auto">
+          <div className="hidden sm:flex flex-wrap gap-2 min-h-8 mt-auto">
             {company.tags.map((trait) => (
               <span
                 key={trait}
-                className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-[0.3em] text-slate-600"
+                className="rounded-full border border-slate-200 bg-slate-100 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.45em] text-slate-600"
               >
                 {trait}
               </span>

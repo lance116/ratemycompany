@@ -16,31 +16,27 @@ const Navigation = () => {
   return (
     <>
       {/* Mobile Top Navigation Bar */}
-      <div className="sm:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-50 w-full">
-        <div className="flex items-center justify-between h-16 px-4 gap-3 w-full">
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <img src="/ratemycompany logo.png" alt="ratemycompany" className="h-8 w-8 object-contain flex-shrink-0" />
-            <span className="text-sm font-bold text-foreground whitespace-nowrap">ratemycompany.ca</span>
-          </Link>
-          
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center justify-center p-2 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${
-                    isActive
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  <Icon size={16} />
-                </Link>
-              );
-            })}
+      <div className="sm:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-50" style={{ width: '100vw' }}>
+        <div className="flex items-center justify-center h-16 px-4 gap-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-1 px-3 py-2 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${
+                  isActive
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <Icon size={16} />
+                <span className="whitespace-nowrap">{item.label}</span>
+              </Link>
+            );
+          })}
+          <div className="flex-shrink-0 ml-auto">
             <AuthDialog />
           </div>
         </div>
