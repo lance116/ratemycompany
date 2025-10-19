@@ -51,7 +51,7 @@ const Navigation = () => {
           <div className="flex justify-between items-center h-16 max-w-7xl mx-auto">
             <div className="flex items-center flex-shrink-0">
               <Link to="/" className="flex items-center space-x-3">
-                <img src="/ratemycompany logo.png" alt="ratemycompany" className="h-10 w-10 object-contain" />
+                <img src="/ratemycompany.png" alt="ratemycompany" className="h-10 w-10 object-contain" />
                 <span className="text-xl font-bold text-foreground">ratemycompany.ca</span>
               </Link>
             </div>

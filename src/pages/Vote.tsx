@@ -311,7 +311,7 @@ const Vote = () => {
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           {/* Mobile branding */}
           <div className="sm:hidden flex items-center gap-2 mb-4 w-full">
-            <img src="/ratemycompany logo.png" alt="ratemycompany" className="h-8 w-8 object-contain flex-shrink-0" />
+            <img src="/ratemycompany.png" alt="ratemycompany" className="h-8 w-8 object-contain flex-shrink-0" />
             <span className="font-bold text-foreground">ratemycompany.ca</span>
           </div>
 
@@ -413,7 +413,7 @@ const CompanyCard = ({
         )}
       />
       <div className="relative z-10 flex h-full flex-col justify-between gap-4 sm:items-center">
-        <div className="flex w-full flex-col items-center gap-4">
+        <div className="flex w-full flex-col items-start gap-4 text-left sm:items-center sm:text-center">
           <div className="flex w-full items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
             <img
               src={logoSrc}
@@ -422,12 +422,12 @@ const CompanyCard = ({
             />
           </div>
 
-          <div className="flex w-full flex-col items-center gap-2 text-center">
-            <h2 className="flex items-center justify-center text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+          <div className="flex w-full flex-col items-start gap-2 sm:items-center">
+            <h2 className="flex items-center text-2xl font-semibold tracking-tight text-slate-900 sm:justify-center sm:text-3xl">
               {company.name}
             </h2>
 
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-start sm:justify-center">
               <div className="flex flex-wrap items-baseline gap-2">
                 <AnimatedStat
                   label="Elo"
