@@ -572,7 +572,7 @@ const AnimatedStat = ({ label, value, delta, trigger }: AnimatedStatProps) => {
       )}
     >
       <span className="text-[10px] font-semibold uppercase tracking-[0.38em] text-slate-500">
-        {label}
+        {label}:
       </span>
       <div className="flex items-baseline gap-1.5">
         <span className="text-lg font-semibold text-slate-900 tabular-nums">{displayValue}</span>
