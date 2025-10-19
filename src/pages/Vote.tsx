@@ -235,18 +235,18 @@ const Vote = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
       <BackgroundCanvas />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 py-4 sm:py-12 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-4 pb-7 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 pt-0 pb-4 sm:py-12 sm:px-6 lg:px-8">
+        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-3 pb-5 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
           <p className="text-[11px] font-semibold uppercase tracking-[0.45em] text-amber-500">
             Live Head-to-Head
           </p>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-[2.15rem]">
+          <h1 className="mt-2 sm:mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-[2.15rem]">
             Which company would you rather work at?
           </h1>
-          <p className="mt-3 text-sm text-slate-600 sm:text-base">
+          <p className="mt-2 sm:mt-3 text-sm text-slate-600 sm:text-base">
             Cast your vote and watch the Elo rankings update live. Upsets make the leaderboard swing!
           </p>
-          <div className="mt-4 inline-flex items-center gap-3 rounded-full border border-amber-400/50 bg-amber-100/70 px-5 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-amber-600">
+          <div className="mt-3 sm:mt-4 inline-flex items-center gap-3 rounded-full border border-amber-400/50 bg-amber-100/70 px-5 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-amber-600">
             <Trophy className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
             <span className="tabular-nums text-slate-800">
               {voteCount.toLocaleString()} total votes recorded
@@ -257,7 +257,7 @@ const Vote = () => {
           )}
         </section>
 
-        <section className="mt-6 flex flex-1 flex-col justify-center">
+        <section className="mt-4 sm:mt-6 flex flex-1 flex-col justify-center">
           <div className="rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6">
             <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4">
               <CompanyCard
@@ -286,7 +286,7 @@ const Vote = () => {
             </div>
           </div>
 
-          <div className="mt-2 flex justify-center">
+          <div className="mt-3 sm:mt-2 flex justify-center">
             <Button
               type="button"
               onClick={handleDraw}
@@ -597,7 +597,7 @@ const BackgroundCanvas = () => (
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(253,224,71,0.32),transparent_62%)]" />
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(253,186,116,0.18),transparent_70%)]" />
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(99,102,241,0.12),transparent_72%)] blur-3xl" />
-    <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-amber-200 via-amber-100/30 to-transparent" />
+    <div className="absolute inset-x-0 top-0 h-56 sm:h-40 bg-gradient-to-b from-amber-200 via-amber-100/30 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-amber-100 via-transparent to-transparent" />
   </div>
 );
