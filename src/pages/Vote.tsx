@@ -259,7 +259,7 @@ const Vote = () => {
 
         <section className="mt-6 flex flex-1 flex-col justify-center">
           <div className="rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4">
               <CompanyCard
                 company={leftCompany}
                 isWinner={selection === leftCompany.id}
@@ -271,12 +271,6 @@ const Vote = () => {
                 disabled={voteMutation.isPending || voteLocked}
                 onSelect={() => handleCompanySelect(leftCompany.id)}
               />
-
-              <div className="flex items-center">
-                <span className="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-[10px] font-semibold uppercase tracking-[0.6em] text-slate-600 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.45)] sm:h-14 sm:px-5">
-                  VS
-                </span>
-              </div>
 
               <CompanyCard
                 company={rightCompany}
