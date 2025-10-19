@@ -365,7 +365,7 @@ const Vote = () => {
               className={cn("h-4 w-4 text-amber-500", layout.isCompact && "h-3.5 w-3.5")}
               strokeWidth={1.5}
             />
-            <span className="tabular-nums text-slate-800">
+            <span className="tabular-nums font-bold tracking-[0.12em] text-slate-800">
               {voteCount.toLocaleString()} total votes recorded
             </span>
           </div>
@@ -383,8 +383,8 @@ const Vote = () => {
         >
           <div
             className={cn(
-              "rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6",
-              layout.isCompact && "rounded-[2rem] p-3",
+              "rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6 mb-6 sm:mb-8",
+              layout.isCompact && "rounded-[2rem] p-3 mb-5",
               layout.isTablet && "sm:p-7"
             )}
           >
