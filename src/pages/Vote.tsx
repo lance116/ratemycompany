@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trophy } from "lucide-react";
+import { Github, Linkedin, Trophy, Twitter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -9,7 +9,6 @@ import {
   VoteMatchupCompany,
   VoteMatchupPayload,
 } from "@/data/companies";
-import SiteFooter from "@/components/SiteFooter";
 
 type Selection = VoteMatchupCompany["id"] | "draw" | null;
 
@@ -75,7 +74,7 @@ const Vote = () => {
       });
 
       if (!companies) {
-        return;
+      return;
       }
 
       const updates = new Map(
@@ -201,8 +200,8 @@ const Vote = () => {
     }
 
     voteMutation.mutate({
-      companyA: leftCompany.id,
-      companyB: rightCompany.id,
+        companyA: leftCompany.id,
+        companyB: rightCompany.id,
       result,
     });
   };
@@ -299,8 +298,8 @@ const Vote = () => {
               onClick={handleDraw}
               disabled={voteMutation.isPending || voteLocked}
               className={cn(
-                "w-full max-w-xs rounded-2xl border border-amber-400/70 !bg-amber-300 px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:!bg-amber-300 active:!bg-amber-300 focus-visible:!bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/80",
-                "disabled:pointer-events-none disabled:bg-amber-300 disabled:text-slate-900 disabled:opacity-100 disabled:shadow-[0_12px_28px_-24px_rgba(217,119,6,0.65)]",
+                "w-full max-w-xs rounded-2xl border border-amber-400/70 bg-amber-400 px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/80",
+                "disabled:pointer-events-none disabled:bg-amber-400 disabled:text-slate-900 disabled:opacity-100 disabled:shadow-[0_12px_28px_-24px_rgba(217,119,6,0.65)]",
                 selection === "draw" && "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-white"
               )}
             >
@@ -314,7 +313,50 @@ const Vote = () => {
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-white/30 via-white/10 to-transparent" />
       )}
 
-      <SiteFooter className="relative z-10" />
+      <footer className="relative z-10 border-t border-slate-200/80 bg-white/85">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold text-slate-800">
+              &copy; {new Date().getFullYear()} ratemycompany. All rights reserved.
+            </p>
+            <p className="text-sm">
+              If you want your company featured, feel free to contact me:
+            </p>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <Button
+              asChild
+              variant="ghost"
+              className="h-10 w-10 rounded-full border border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"
+            >
+              <a href="https://www.linkedin.com/in/lance-yan/" target="_blank" rel="noreferrer">
+                <Linkedin className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">LinkedIn</span>
+              </a>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              className="h-10 w-10 rounded-full border border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"
+            >
+              <a href="https://github.com/lance116" target="_blank" rel="noreferrer">
+                <Github className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">GitHub</span>
+              </a>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              className="h-10 w-10 rounded-full border border-slate-200 text-slate-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600"
+            >
+              <a href="https://x.com/cnnguan" target="_blank" rel="noreferrer">
+                <Twitter className="h-5 w-5" aria-hidden="true" />
+                <span className="sr-only">X (Twitter)</span>
+              </a>
+            </Button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
@@ -353,11 +395,14 @@ const CompanyCard = ({
         !isLoser &&
         "hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-white hover:brightness-105 hover:saturate-110 hover:shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)]",
         isWinner &&
-          "winner-glow border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/60",
-        isLoser && "loser-sink border-slate-200/60"
+          "winner-glow border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/60 shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)] brightness-110 saturate-110",
+        isLoser && "loser-sink border-slate-200/60 opacity-70 brightness-90 saturate-75"
       )}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.14),transparent_65%)]" />
+      <div className={cn(
+        "pointer-events-none absolute inset-0",
+        isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
+      )} />
       <div className="relative z-10 flex h-full flex-col gap-6">
         <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
           <img
@@ -540,7 +585,11 @@ const AnimatedStat = ({ label, value, delta, trigger }: AnimatedStatProps) => {
 
 const BackgroundCanvas = () => (
   <div aria-hidden className="pointer-events-none">
-    <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-amber-200 via-white/40 to-transparent" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(253,224,71,0.32),transparent_62%)]" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(253,186,116,0.18),transparent_70%)]" />
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(99,102,241,0.12),transparent_72%)] blur-3xl" />
+    <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-amber-200 via-amber-100/30 to-transparent" />
+    <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-amber-100 via-transparent to-transparent" />
   </div>
 );
 

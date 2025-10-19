@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   fetchCompanyLeaderboardEntry,
@@ -77,6 +77,28 @@ const CompanyDetails = () => {
     culture: 5,
     prestige: 5,
   });
+  const [hasLocalReviewSubmission, setHasLocalReviewSubmission] = useState(false);
+
+  const hasUserReview = useMemo(() => {
+    if (!user) {
+      return false;
+    }
+    return reviews.some(review => review.authorId === user.id);
+  }, [reviews, user]);
+
+  const reviewLocked = hasUserReview || hasLocalReviewSubmission;
+
+  useEffect(() => {
+    if (hasUserReview) {
+      setHasLocalReviewSubmission(true);
+      setShowReviewForm(false);
+    }
+  }, [hasUserReview]);
+
+  useEffect(() => {
+    setHasLocalReviewSubmission(false);
+    setShowReviewForm(false);
+  }, [companyId]);
 
   const submitReviewMutation = useMutation({
     mutationFn: async () => {
@@ -116,6 +138,7 @@ const CompanyDetails = () => {
         culture: 5,
         prestige: 5,
       });
+      setHasLocalReviewSubmission(true);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["companyReviews", companyId] }),
         queryClient.invalidateQueries({ queryKey: ["company", companyId] }),
@@ -206,8 +229,9 @@ const CompanyDetails = () => {
       alert("Please sign in to leave a review.");
       return;
     }
-    if (!reviewForm.body.trim()) {
-      alert("Review content cannot be empty.");
+    if (reviewLocked) {
+      alert("You have already submitted a review for this company. Submissions are final.");
+      setShowReviewForm(false);
       return;
     }
     submitReviewMutation.mutate();
@@ -269,6 +293,10 @@ const CompanyDetails = () => {
       document.dispatchEvent(
         new CustomEvent("open-auth-dialog", { detail: { mode: "signup" as const } })
       );
+      return;
+    }
+    if (reviewLocked) {
+      alert("You have already submitted a review for this company. Reviews are limited to one per person.");
       return;
     }
     setShowReviewForm(prev => !prev);
@@ -383,10 +411,16 @@ const CompanyDetails = () => {
                   {company.reviewCount} review{company.reviewCount === 1 ? "" : "s"} total
                 </p>
               </div>
-              <Button onClick={handleReviewButtonClick} variant="secondary">
+              <Button onClick={handleReviewButtonClick} variant="secondary" disabled={reviewLocked}>
                 {showReviewForm ? "Cancel" : "Write a review"}
               </Button>
             </div>
+
+            {reviewLocked && (
+              <p className="text-xs font-semibold text-amber-600">
+                You&apos;ve already submitted a review for this company. Reviews are limited to one per person.
+              </p>
+            )}
 
             {showReviewForm && (
               <form className="grid gap-4" onSubmit={handleSubmitReview}>
@@ -395,6 +429,9 @@ const CompanyDetails = () => {
                     You need to sign in before submitting a review.
                   </p>
                 )}
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  One submission per person. Please review your answers carefully—once submitted, your review is final.
+                </div>
                 <div className="space-y-2">
                   <Label>Rating</Label>
                   {renderStars(reviewForm.rating, true, rating => setReviewForm(prev => ({ ...prev, rating })))}
@@ -438,15 +475,13 @@ const CompanyDetails = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="review">Your review</Label>
+                  <Label htmlFor="review">Your review (optional)</Label>
                   <Textarea
                     id="review"
-                    minLength={20}
                     value={reviewForm.body}
                     onChange={event => setReviewForm(prev => ({ ...prev, body: event.target.value }))}
                     placeholder="Share details about your experience..."
                     rows={6}
-                    required
                   />
                 </div>
 

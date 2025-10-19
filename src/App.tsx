@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,29 +9,11 @@ import Leaderboard from "./pages/Leaderboard";
 import Reviews from "./pages/Reviews";
 import CompanyDetails from "./pages/CompanyDetails";
 import NotFound from "./pages/NotFound";
-import AuraComparisonPopup from "./components/AuraComparisonPopup";
 import { SupabaseAuthProvider } from "./providers/SupabaseAuthProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showAuraPopup, setShowAuraPopup] = useState(false);
-
-  useEffect(() => {
-    // Show the popup on every page reload
-    console.log('Page loaded, setting timer for popup');
-    const timer = setTimeout(() => {
-      console.log('Timer fired, showing popup');
-      setShowAuraPopup(true);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleCloseAuraPopup = () => {
-    setShowAuraPopup(false);
-  };
-
   return (
     <SupabaseAuthProvider>
       <QueryClientProvider client={queryClient}>
@@ -49,10 +30,6 @@ const App = () => {
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <AuraComparisonPopup
-              isOpen={showAuraPopup}
-              onClose={handleCloseAuraPopup}
-            />
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

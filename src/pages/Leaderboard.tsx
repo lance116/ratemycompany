@@ -253,7 +253,7 @@ const Leaderboard = () => {
           </div>
 
           <div className="relative mt-6">
-            <div className="relative z-20 mb-4 flex justify-center">
+            <div className="relative z-20 mb-4 flex justify-start">
               <div className="relative w-full max-w-xs" ref={suggestionRef}>
                 <SearchIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input
