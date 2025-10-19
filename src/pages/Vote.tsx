@@ -394,7 +394,7 @@ const CompanyCard = ({
       onClick={handleClick}
       disabled={disabled}
       className={cn(
-      "vote-card relative flex min-h-[20rem] flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7",
+      "vote-card relative flex min-h-[20rem] flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7 sm:text-center",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70",
       "disabled:cursor-not-allowed disabled:opacity-80",
       !isWinner &&
@@ -412,7 +412,7 @@ const CompanyCard = ({
           isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
         )}
       />
-      <div className="relative z-10 flex h-full flex-col justify-between gap-4 md:items-center">
+      <div className="relative z-10 flex h-full flex-col justify-between gap-4 sm:items-center">
         <div className="flex w-full flex-col items-center gap-4">
           <div className="flex w-full items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
             <img
