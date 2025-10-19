@@ -412,11 +412,11 @@ const CompanyCard = ({
       )} />
       <div className="relative z-10 flex h-full flex-col justify-between gap-0">
         <div className="flex flex-col gap-1">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] flex items-center justify-center">
+          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] flex items-center justify-center w-full">
             <img
               src={logoSrc}
               alt={`${company.name} logo`}
-              className="mx-auto h-20 w-auto object-contain"
+              className="h-20 w-auto object-contain"
             />
           </div>
 
