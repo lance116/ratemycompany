@@ -57,7 +57,7 @@ const Reviews = () => {
         <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            SWE Internship Reviews
+            Community Reviews
           </h1>
           <p className="text-muted-foreground">
             Read detailed reviews from the community
