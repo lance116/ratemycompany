@@ -163,7 +163,7 @@ export const fetchCompanyEloHistory = async (companyId: string): Promise<EloHist
     .select("rating, rank, created_at")
     .eq("company_id", companyId)
     .order("created_at", { ascending: false })
-    .limit(40);
+    .limit(20);
 
   if (error) {
     throw new Error(error.message);
