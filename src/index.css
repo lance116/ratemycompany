@@ -292,6 +292,12 @@ All colors MUST be HSL.
     filter: saturate(1.15) brightness(1.02);
   }
 
+  @media (max-width: 640px) {
+    .winner-glow {
+      animation: none;
+    }
+  }
+
   .winner-glow::after {
     content: "";
     position: absolute;
