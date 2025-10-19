@@ -49,21 +49,35 @@ const Leaderboard = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  const renderCompanyCard = (company: LeaderboardCompany, index: number, podiumRank?: number) => {
+  const renderCompanyCard = (
+    company: LeaderboardCompany,
+    displayRank: number,
+    options?: {
+      podiumRank?: number;
+      wrapperClass?: string;
+      cardClass?: string;
+    }
+  ) => {
     const logo = company.logoUrl ?? defaultLogo;
     const reviewRating =
       company.averageReviewScore !== null ? company.averageReviewScore.toFixed(1) : "N/A";
 
     const reviewCountLabel = `${company.reviewCount} review${company.reviewCount === 1 ? "" : "s"}`;
+    const { podiumRank, wrapperClass = "", cardClass = "" } = options ?? {};
 
     return (
-      <Link to={`/company/${company.id}`} className="flex-1 max-w-xs" key={company.id}>
+      <Link
+        to={`/company/${company.id}`}
+        className={`flex-1 max-w-xs ${wrapperClass}`}
+        key={company.id}
+      >
         <Card
           className={[
             "transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-2",
             podiumRank === 1 && "border-gold bg-gradient-to-b from-gold/20 to-gold/10 shadow-gold/30 transform scale-105",
             podiumRank === 2 && "border-silver bg-gradient-to-b from-silver/20 to-silver/10 shadow-silver/20",
             podiumRank === 3 && "border-bronze bg-gradient-to-b from-bronze/20 to-bronze/10 shadow-bronze/20",
+            cardClass || "",
           ]
             .filter(Boolean)
             .join(" ")}
@@ -77,7 +91,7 @@ const Leaderboard = () => {
                 </div>
               ) : (
                 <Badge variant="outline" className="text-sm">
-                  #{index}
+                  #{displayRank}
                 </Badge>
               )}
             </div>
@@ -120,8 +134,20 @@ const Leaderboard = () => {
         </div>
 
         <div className="mb-12">
-          <div className="flex flex-col md:flex-row md:items-end md:space-x-4 space-y-4 md:space-y-0 justify-center">
-            {podium.map((company, index) => renderCompanyCard(company, index + 1, index + 1))}
+          <div className="flex flex-col items-center justify-center space-y-4 md:flex-row md:items-end md:space-x-6 md:space-y-0">
+            {[
+              { company: podium[1], rank: 2, wrapperClass: "md:order-1 md:translate-y-6" },
+              { company: podium[0], rank: 1, wrapperClass: "md:order-2 md:-translate-y-4", cardClass: "md:pb-8" },
+              { company: podium[2], rank: 3, wrapperClass: "md:order-3 md:translate-y-10" },
+            ]
+              .filter(slot => slot.company)
+              .map(slot =>
+                renderCompanyCard(slot.company!, slot.rank, {
+                  podiumRank: slot.rank,
+                  wrapperClass: slot.wrapperClass,
+                  cardClass: slot.cardClass,
+                })
+              )}
           </div>
         </div>
 

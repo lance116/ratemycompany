@@ -233,8 +233,8 @@ const Vote = () => {
           </div>
         </div>
 
-        <div className="relative">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+        <div className="flex flex-col items-center space-y-6">
+          <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
             <Card
               className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                 isVoting ? "pointer-events-none opacity-70" : ""
@@ -269,17 +269,6 @@ const Vote = () => {
                 <PayStats pay={leftCompany.payDisplay} />
               </CardContent>
             </Card>
-
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <span className="text-sm text-muted-foreground">or</span>
-              <Button
-                variant="outline"
-                onClick={handleDontKnow}
-                disabled={isVoting}
-              >
-                I&apos;m not sure
-              </Button>
-            </div>
 
             <Card
               className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
@@ -316,6 +305,14 @@ const Vote = () => {
               </CardContent>
             </Card>
           </div>
+
+          <Button
+            variant="outline"
+            onClick={handleDontKnow}
+            disabled={isVoting}
+          >
+            I&apos;m not sure
+          </Button>
         </div>
       </div>
     </div>

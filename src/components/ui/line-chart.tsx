@@ -100,7 +100,7 @@ export const LineChart: React.FC<LineChartProps> = ({
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         className="overflow-visible"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
       >
         {/* Grid lines */}
         <defs>

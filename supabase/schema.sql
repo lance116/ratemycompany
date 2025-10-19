@@ -228,20 +228,20 @@ begin
 
   insert into public.company_elo (company_id)
     values (company_a)
-    on conflict (company_id) do nothing;
+    on conflict on constraint company_elo_pkey do nothing;
 
   insert into public.company_elo (company_id)
     values (company_b)
-    on conflict (company_id) do nothing;
+    on conflict on constraint company_elo_pkey do nothing;
 
-  select rating into a_rating
-  from public.company_elo
-  where company_id = company_a
+  select ce.rating into a_rating
+  from public.company_elo ce
+  where ce.company_id = company_a
   for update;
 
-  select rating into b_rating
-  from public.company_elo
-  where company_id = company_b
+  select ce.rating into b_rating
+  from public.company_elo ce
+  where ce.company_id = company_b
   for update;
 
   exp_a := 1 / (1 + power(10, (b_rating - a_rating) / 400));
@@ -261,23 +261,23 @@ begin
   new_a := a_rating + k_factor * (score_a - exp_a);
   new_b := b_rating + k_factor * (score_b - exp_b);
 
-  update public.company_elo
+  update public.company_elo ce
     set rating = new_a,
         matches_played = matches_played + 1,
         wins = wins + case when result = 'a' then 1 else 0 end,
         losses = losses + case when result = 'b' then 1 else 0 end,
         draws = draws + case when result = 'draw' then 1 else 0 end,
         updated_at = now()
-    where company_id = company_a;
+    where ce.company_id = company_a;
 
-  update public.company_elo
+  update public.company_elo ce
     set rating = new_b,
         matches_played = matches_played + 1,
         wins = wins + case when result = 'b' then 1 else 0 end,
         losses = losses + case when result = 'a' then 1 else 0 end,
         draws = draws + case when result = 'draw' then 1 else 0 end,
         updated_at = now()
-    where company_id = company_b;
+    where ce.company_id = company_b;
 
   insert into public.matchups (
     company_a,
@@ -304,7 +304,7 @@ begin
   with ranking as (
     select
       c.id,
-      dense_rank() over (order by ce.rating desc, c.created_at asc) as rank
+      dense_rank() over (order by ce.rating desc, c.created_at asc)::integer as rank
     from public.companies c
     join public.company_elo ce on ce.company_id = c.id
   ),
@@ -326,15 +326,15 @@ begin
     ce.wins,
     ce.losses,
     ce.draws,
-    r.rank
+    ranks.rank
   from public.company_elo ce
   join (
     select
       c.id,
-      dense_rank() over (order by ce.rating desc, c.created_at asc) as rank
+      dense_rank() over (order by ce.rating desc, c.created_at asc)::integer as rank
     from public.companies c
     join public.company_elo ce on ce.company_id = c.id
-  ) r on r.id = ce.company_id
+  ) ranks on ranks.id = ce.company_id
   where ce.company_id in (company_a, company_b);
 end;
 $$;
@@ -522,7 +522,7 @@ as $$
 begin
   insert into public.company_elo (company_id)
   values (new.id)
-  on conflict (company_id) do nothing;
+  on conflict on constraint company_elo_pkey do nothing;
   return new;
 end;
 $$;
