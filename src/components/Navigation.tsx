@@ -19,10 +19,8 @@ const Navigation = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">R</span>
-              </div>
-              <span className="text-xl font-bold text-foreground">ratemycompany</span>
+              <img src="/ratemycompany logo.png" alt="ratemycompany" className="h-10 w-10 object-contain" />
+              <span className="text-xl font-bold text-foreground">ratemycompany.ca</span>
             </Link>
           </div>
 

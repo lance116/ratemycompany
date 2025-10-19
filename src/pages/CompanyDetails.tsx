@@ -110,6 +110,30 @@ const CompanyDetails = () => {
       const program = reviewForm.program.trim();
       const cohort = reviewForm.cohort.trim();
 
+      // Validate review body word count (max 200 words)
+      const wordCount = body.split(/\s+/).filter(word => word.length > 0).length;
+      if (wordCount > 200) {
+        throw new Error("Review must be 200 words or less.");
+      }
+
+      // Validate program name length (max 30 characters)
+      if (program.length > 30) {
+        throw new Error("Program name must be 30 characters or less.");
+      }
+
+      // Validate cohort name length (max 30 characters)
+      if (cohort.length > 30) {
+        throw new Error("Cohort must be 30 characters or less.");
+      }
+
+      // Validate pay (max 400 per hour)
+      if (reviewForm.pay) {
+        const payAmount = Number(reviewForm.pay);
+        if (payAmount > 400) {
+          throw new Error("Pay cannot exceed $400 per hour.");
+        }
+      }
+
       if (containsProhibitedSlur(body) || containsProhibitedSlur(program) || containsProhibitedSlur(cohort)) {
         throw new Error("Please remove prohibited language from your review.");
       }
@@ -439,32 +463,41 @@ const CompanyDetails = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="program">Program</Label>
+                    <div className="flex justify-between">
+                      <Label htmlFor="program">Program</Label>
+                      <span className="text-xs text-muted-foreground">{reviewForm.program.length}/30</span>
+                    </div>
                     <Input
                       id="program"
                       value={reviewForm.program}
-                      onChange={event => setReviewForm(prev => ({ ...prev, program: event.target.value }))}
+                      onChange={event => setReviewForm(prev => ({ ...prev, program: event.target.value.slice(0, 30) }))}
                       placeholder="e.g. Software Engineering"
+                      maxLength={30}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cohort">Cohort</Label>
+                    <div className="flex justify-between">
+                      <Label htmlFor="cohort">Cohort</Label>
+                      <span className="text-xs text-muted-foreground">{reviewForm.cohort.length}/30</span>
+                    </div>
                     <Input
                       id="cohort"
                       value={reviewForm.cohort}
-                      onChange={event => setReviewForm(prev => ({ ...prev, cohort: event.target.value }))}
+                      onChange={event => setReviewForm(prev => ({ ...prev, cohort: event.target.value.slice(0, 30) }))}
                       placeholder="e.g. Summer 2024"
+                      maxLength={30}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="pay">Hourly pay (optional)</Label>
+                    <Label htmlFor="pay">Hourly pay (optional, max $400)</Label>
                     <Input
                       id="pay"
                       type="number"
                       min="0"
+                      max="400"
                       value={reviewForm.pay}
                       onChange={event => setReviewForm(prev => ({ ...prev, pay: event.target.value }))}
                       placeholder="e.g. 45"
@@ -475,7 +508,12 @@ const CompanyDetails = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="review">Your review (optional)</Label>
+                  <div className="flex justify-between">
+                    <Label htmlFor="review">Your review (optional, max 200 words)</Label>
+                    <span className={`text-xs ${reviewForm.body.split(/\s+/).filter(w => w.length > 0).length > 200 ? "text-red-500 font-semibold" : "text-muted-foreground"}`}>
+                      {reviewForm.body.split(/\s+/).filter(w => w.length > 0).length}/200 words
+                    </span>
+                  </div>
                   <Textarea
                     id="review"
                     value={reviewForm.body}
