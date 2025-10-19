@@ -415,28 +415,30 @@ const CompanyCard = ({
 
         <div className="space-y-4">
           <div className="space-y-3">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl h-16 flex items-center justify-center">
               {company.name}
             </h2>
 
-            <div className="flex flex-wrap items-baseline gap-2">
-              <AnimatedStat
-                label="Elo"
-                value={company.elo}
-                delta={statDelta?.elo}
-                trigger={statTrigger}
-              />
-              <AnimatedStat
-                label="Rank"
-                value={company.rank}
-                delta={statDelta?.rank}
-                trigger={statTrigger}
-              />
+            <div className="h-12 flex items-center">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <AnimatedStat
+                  label="Elo"
+                  value={company.elo}
+                  delta={statDelta?.elo}
+                  trigger={statTrigger}
+                />
+                <AnimatedStat
+                  label="Rank"
+                  value={company.rank}
+                  delta={statDelta?.rank}
+                  trigger={statTrigger}
+                />
+              </div>
             </div>
           </div>
 
           {company.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 min-h-8">
               {company.tags.map((trait) => (
                 <span
                   key={trait}

@@ -129,7 +129,7 @@ const Leaderboard = () => {
       <Link
         to={`/company/${company.id}`}
         id={`company-card-${company.id}`}
-        className={cn("flex-1 basis-0 max-w-xs", wrapperClass)}
+        className={cn("w-full md:flex-1 md:basis-0 md:max-w-xs", wrapperClass)}
         key={company.id}
       >
         <div className="relative flex h-full flex-col justify-end">
@@ -155,12 +155,12 @@ const Leaderboard = () => {
                 aria-hidden="true"
               />
             )}
-            <CardContent className="relative z-10 flex flex-1 flex-col items-center justify-between p-6 text-center">
-              <div className="mb-4">
+            <CardContent className="relative z-10 flex flex-1 flex-col items-center justify-between p-4 md:p-6 text-center">
+              <div className="mb-2 md:mb-4">
                 {podiumRank ? (
                   <div className="flex flex-col items-center">
                     {getRankIcon(podiumRank)}
-                    <span className="text-2xl font-bold mt-1">{`#${podiumRank}`}</span>
+                    <span className="text-xl md:text-2xl font-bold mt-1">{`#${podiumRank}`}</span>
                   </div>
                 ) : (
                   <Badge variant="outline" className="text-sm">
@@ -178,21 +178,25 @@ const Leaderboard = () => {
                 />
               </div>
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-foreground">
+                <h3 className="text-lg font-bold text-foreground h-14 flex items-center justify-center">
                   {company.name}
                 </h3>
-                <div className="flex items-center justify-center gap-3 text-sm">
-                  <div className="flex items-center gap-1">
-                    <Trophy className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">Elo: {company.elo}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">{reviewRating}</span>
+                <div className="h-12 flex items-center justify-center">
+                  <div className="flex items-center justify-center gap-3 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Trophy className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-foreground">Elo: {company.elo}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-foreground">{reviewRating}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">{reviewCountLabel}</div>
-                <PayStats pay={company.payDisplay} className="justify-center" />
+                <div className="h-5 flex items-center justify-center text-xs text-muted-foreground">{reviewCountLabel}</div>
+                <div className="h-8 flex items-center justify-center">
+                  <PayStats pay={company.payDisplay} className="justify-center" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -214,15 +218,15 @@ const Leaderboard = () => {
           </div>
 
           <div className="mb-12">
-            <div className="grid grid-cols-3 gap-2 md:flex md:items-end md:justify-center md:space-x-6">
+            <div className="flex flex-col md:grid md:grid-cols-3 md:gap-2 md:items-end md:justify-center space-y-2 md:space-y-0">
               {[
                 {
                   company: podium[1],
                   rank: 2,
                   options: {
                     podiumRank: 2,
-                    wrapperClass: "col-span-1 md:order-1",
-                    cardHeightClass: "min-h-[280px] md:min-h-[360px]",
+                    wrapperClass: "w-full md:col-span-1 md:order-1",
+                    cardHeightClass: "md:min-h-[360px]",
                     logoBoxClass: "h-16 w-16 md:h-24 md:w-24",
                   },
                 },
@@ -231,9 +235,9 @@ const Leaderboard = () => {
                   rank: 1,
                   options: {
                     podiumRank: 1,
-                    wrapperClass: "col-span-1 md:order-2",
-                    cardHeightClass: "min-h-[320px] md:min-h-[420px]",
-                    logoBoxClass: "h-20 w-20 md:h-28 md:w-28",
+                    wrapperClass: "w-full md:col-span-1 md:order-2",
+                    cardHeightClass: "min-h-[340px] md:min-h-[420px]",
+                    logoBoxClass: "h-16 w-16 md:h-28 md:w-28",
                   },
                 },
                 {
@@ -241,9 +245,9 @@ const Leaderboard = () => {
                   rank: 3,
                   options: {
                     podiumRank: 3,
-                    wrapperClass: "col-span-1 md:order-3",
-                    cardHeightClass: "min-h-[240px] md:min-h-[340px]",
-                    logoBoxClass: "h-14 w-14 md:h-20 md:w-20",
+                    wrapperClass: "w-full md:col-span-1 md:order-3",
+                    cardHeightClass: "md:min-h-[340px]",
+                    logoBoxClass: "h-16 w-16 md:h-20 md:w-20",
                   },
                 },
               ]
