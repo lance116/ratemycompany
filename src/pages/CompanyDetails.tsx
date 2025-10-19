@@ -196,7 +196,7 @@ const CompanyDetails = () => {
       history.map((entry, index) => ({
         x: index + 1,
         y: entry.rating,
-        label: index === 0 ? "Start" : index === history.length - 1 ? "Now" : `Update ${index + 1}`,
+        label: index === history.length - 1 ? "Now" : null,
       })),
     [history]
   );
