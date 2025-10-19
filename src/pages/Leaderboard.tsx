@@ -181,9 +181,6 @@ const Leaderboard = () => {
                 <h3 className="text-lg font-bold text-foreground h-14 flex items-center justify-center">
                   {company.name}
                 </h3>
-                <p className="hidden sm:block text-xs text-muted-foreground text-center line-clamp-2 min-h-8 flex items-center justify-center">
-                  {company.description || ""}
-                </p>
                 <div className="h-12 flex items-center justify-center">
                   <div className="flex items-center justify-center gap-3 text-sm">
                     <div className="flex items-center gap-1">

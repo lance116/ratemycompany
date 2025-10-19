@@ -420,7 +420,7 @@ const CompanyCard = ({
             />
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 sm:space-y-0">
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl min-h-20 flex items-center justify-center">
               {company.name}
             </h2>
