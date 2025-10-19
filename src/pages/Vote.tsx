@@ -32,6 +32,13 @@ const Vote = () => {
   const [isVoting, setIsVoting] = useState(false);
   const [votes, setVotes] = useState(0);
   const [completedMatchups, setCompletedMatchups] = useState<Set<string>>(new Set());
+  const [displayedRatings, setDisplayedRatings] = useState<Record<string, number>>({});
+  const [eloDiffs, setEloDiffs] = useState<Record<string, number>>({});
+  const animationRef = useRef<number | null>(null);
+  const interactionGateRef = useRef<{ animationDone: boolean; rpcDone: boolean }>({
+    animationDone: false,
+    rpcDone: false,
+  });
 
   useEffect(() => {
     if (companies.length < 2) {
@@ -46,6 +53,26 @@ const Vote = () => {
   }, [companies]);
 
   const companyPool = useMemo(() => companies, [companies]);
+
+  useEffect(() => {
+    if (!currentPair) {
+      return;
+    }
+    const [left, right] = currentPair;
+    setDisplayedRatings({
+      [left.id]: left.elo,
+      [right.id]: right.elo,
+    });
+    setEloDiffs({});
+  }, [currentPair]);
+
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
 
   const createMatchupKey = (company1: LeaderboardCompany, company2: LeaderboardCompany) => {
     const [id1, id2] = [company1.id, company2.id].sort((a, b) => a.localeCompare(b));
@@ -72,12 +99,55 @@ const Vote = () => {
     return [shuffled[0], shuffled[1]];
   };
 
+  const animateEloChange = ({
+    winnerId,
+    loserId,
+    startWinner,
+    startLoser,
+    targetWinner,
+    targetLoser,
+    onComplete,
+  }: {
+    winnerId: string;
+    loserId: string;
+    startWinner: number;
+    startLoser: number;
+    targetWinner: number;
+    targetLoser: number;
+    onComplete: () => void;
+  }) => {
+    const duration = 900;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      setDisplayedRatings(prev => ({
+        ...prev,
+        [winnerId]: Math.round(startWinner + (targetWinner - startWinner) * progress),
+        [loserId]: Math.round(startLoser + (targetLoser - startLoser) * progress),
+      }));
+
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(step);
+      } else {
+        animationRef.current = null;
+        onComplete();
+      }
+    };
+
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    animationRef.current = requestAnimationFrame(step);
+  };
+
   const handleDontKnow = () => {
     if (!currentPair) {
       return;
     }
 
     const newPair = getRandomPair(companyPool, [], completedMatchups);
+    setEloDiffs({});
     setCurrentPair(newPair);
   };
 
@@ -88,6 +158,14 @@ const Vote = () => {
 
     setIsVoting(true);
     setVotes(prev => prev + 1);
+    interactionGateRef.current = { animationDone: false, rpcDone: false };
+
+    const releaseGate = () => {
+      const gate = interactionGateRef.current;
+      if (gate.animationDone && gate.rpcDone) {
+        setIsVoting(false);
+      }
+    };
 
     const [leftCompany, rightCompany] = currentPair;
     const loser = winner.id === leftCompany.id ? rightCompany : leftCompany;
@@ -106,11 +184,36 @@ const Vote = () => {
 
     queryClient.setQueryData(["leaderboard"], optimisticCompanies);
 
+    const startWinnerRating = displayedRatings[winner.id] ?? winner.elo;
+    const startLoserRating = displayedRatings[loser.id] ?? loser.elo;
+
+    setEloDiffs({
+      [winner.id]: Math.round(winnerNewRating - startWinnerRating),
+      [loser.id]: Math.round(loserNewRating - startLoserRating),
+    });
+
     const newCompletedMatchups = new Set([...completedMatchups, matchupKey]);
+    setCompletedMatchups(newCompletedMatchups);
+
     const nextPair = getRandomPair(optimisticCompanies, [], newCompletedMatchups);
 
-    setCompletedMatchups(newCompletedMatchups);
-    setCurrentPair(nextPair);
+    animateEloChange({
+      winnerId: winner.id,
+      loserId: loser.id,
+      startWinner: startWinnerRating,
+      startLoser: startLoserRating,
+      targetWinner: winnerNewRating,
+      targetLoser: loserNewRating,
+      onComplete: () => {
+        setEloDiffs({});
+        setCurrentPair(nextPair);
+        interactionGateRef.current = {
+          ...interactionGateRef.current,
+          animationDone: true,
+        };
+        releaseGate();
+      },
+    });
 
     try {
       const result = winner.id === leftCompany.id ? "a" : "b";
@@ -150,7 +253,11 @@ const Vote = () => {
       console.error("Failed to record matchup", error);
     } finally {
       await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      setIsVoting(false);
+      interactionGateRef.current = {
+        ...interactionGateRef.current,
+        rpcDone: true,
+      };
+      releaseGate();
     }
   };
 
@@ -162,15 +269,14 @@ const Vote = () => {
 
   const renderCompanyCard = (company: LeaderboardCompany) => {
     const logo = company.logoUrl ?? defaultLogo;
-    const isActive = winnerPosition === position;
-
+    const currentRating = displayedRatings[company.id] ?? company.elo;
+    const ratingDiff = eloDiffs[company.id] ?? 0;
     return (
       <Card
         key={company.id}
         className={cn(
           "w-full cursor-pointer border border-transparent bg-card/80 transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-xl",
-          isVoting && "pointer-events-none opacity-70",
-          isActive && "border-primary/60 shadow-primary/20"
+          isVoting && "pointer-events-none opacity-70"
         )}
         onClick={() => handleVote(company)}
       >
@@ -188,7 +294,18 @@ const Vote = () => {
           <div className="mb-4 flex items-center justify-center space-x-4 text-sm font-medium text-muted-foreground">
             <div className="flex items-center space-x-1">
               <Trophy className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-foreground">{company.elo}</span>
+              <span className="font-semibold text-foreground">{currentRating}</span>
+              {ratingDiff !== 0 && (
+                <span
+                  className={cn(
+                    "text-xs font-semibold",
+                    ratingDiff > 0 ? "text-emerald-500" : "text-rose-500"
+                  )}
+                >
+                  {ratingDiff > 0 ? "+" : ""}
+                  {ratingDiff}
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-1">
               <Star className="h-4 w-4 text-primary" />
