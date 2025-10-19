@@ -357,7 +357,7 @@ const CompanyDetails = () => {
                 <div className="flex flex-wrap gap-2">
                   {company.tags.map(tag => (
                     <Badge key={tag} variant="secondary">
-                      {tag}
+                      {tag.charAt(0).toUpperCase() + tag.slice(1).toLowerCase()}
                     </Badge>
                   ))}
                 </div>
@@ -397,15 +397,30 @@ const CompanyDetails = () => {
                     <span className="text-sm text-muted-foreground">Best Rank</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-center space-x-2">
-                    <PayStats pay={company.payDisplay} className="text-lg" />
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-4 pt-4 border-t border-border">
+                  <div className="text-center">
+                    <span className="text-sm text-muted-foreground">Pay</span>
+                    <div className="text-lg font-semibold text-foreground">{company.payDisplay}</div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
-                    <span>Matches: {company.matchesPlayed}</span>
-                    <span>W {company.wins}</span>
-                    <span>L {company.losses}</span>
-                    <span>D {company.draws}</span>
+                  <div className="text-center">
+                    <span className="text-sm text-muted-foreground">Prestige</span>
+                    <div className="text-lg font-semibold text-foreground">{company.averagePrestige ? company.averagePrestige.toFixed(1) : "N/A"}/10</div>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm text-muted-foreground">Culture</span>
+                    <div className="text-lg font-semibold text-foreground">{company.averageCulture ? company.averageCulture.toFixed(1) : "N/A"}/10</div>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm text-muted-foreground">Wins</span>
+                    <div className="text-lg font-semibold text-foreground">{company.wins}</div>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm text-muted-foreground">Losses</span>
+                    <div className="text-lg font-semibold text-foreground">{company.losses}</div>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm text-muted-foreground">Draws</span>
+                    <div className="text-lg font-semibold text-foreground">{company.draws}</div>
                   </div>
                 </div>
               </div>
