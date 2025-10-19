@@ -406,13 +406,15 @@ const CompanyCard = ({
         isLoser && "sm:loser-sink border-slate-200/60 opacity-70 brightness-90 saturate-75"
       )}
     >
-      <div className={cn(
-        "pointer-events-none absolute inset-0",
-        isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
-      )} />
-      <div className="relative z-10 flex h-full flex-col sm:items-center justify-between gap-0">
-        <div className="flex flex-col gap-1 w-full sm:items-center">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] flex items-center justify-center w-full">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0",
+          isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
+        )}
+      />
+      <div className="relative z-10 flex h-full flex-col justify-between gap-4 md:items-center">
+        <div className="flex w-full flex-col items-center gap-4">
+          <div className="flex w-full items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
             <img
               src={logoSrc}
               alt={`${company.name} logo`}
@@ -420,12 +422,12 @@ const CompanyCard = ({
             />
           </div>
 
-          <div className="space-y-1 sm:space-y-0 w-full sm:text-center">
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl min-h-20 flex items-center justify-center">
+          <div className="flex w-full flex-col items-center gap-2 text-center">
+            <h2 className="flex items-center justify-center text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               {company.name}
             </h2>
 
-            <div className="min-h-12 flex items-center justify-center">
+            <div className="flex items-center justify-center">
               <div className="flex flex-wrap items-baseline gap-2">
                 <AnimatedStat
                   label="Elo"
@@ -445,7 +447,7 @@ const CompanyCard = ({
         </div>
 
         {company.tags.length > 0 && (
-          <div className="hidden sm:flex flex-wrap gap-2 min-h-8 mt-auto justify-center items-center w-full">
+          <div className="hidden w-full flex-wrap items-center justify-center gap-2 sm:flex">
             {company.tags.map((trait) => (
               <span
                 key={trait}
