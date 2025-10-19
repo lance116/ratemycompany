@@ -235,8 +235,8 @@ const Vote = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
       <BackgroundCanvas />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 sm:py-12 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-0 pb-7 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 py-4 sm:py-12 sm:px-6 lg:px-8">
+        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-4 pb-7 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
           <p className="text-[11px] font-semibold uppercase tracking-[0.45em] text-amber-500">
             Live Head-to-Head
           </p>
