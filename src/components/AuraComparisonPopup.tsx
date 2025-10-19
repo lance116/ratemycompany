@@ -13,10 +13,10 @@ const AuraComparisonPopup = ({ isOpen, onClose }: AuraComparisonPopupProps) => {
       <DialogContent className="sm:max-w-[600px] p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center mb-4">
-            Which SWE internship has more aura?
+            Which company has more aura?
           </DialogTitle>
           <DialogDescription className="text-center text-muted-foreground mb-6">
-            Help us rank the most prestigious and impactful SWE internships.
+            Help us rank the most prestigious and impactful tech companies.
           </DialogDescription>
         </DialogHeader>
         <div className="relative w-full aspect-video bg-gray-200 dark:bg-gray-800 rounded-lg flex items-center justify-center mb-6 overflow-hidden">

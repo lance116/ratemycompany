@@ -29,6 +29,7 @@ import {
 import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
 import { containsProhibitedSlur } from "@/lib/profanity";
 import { cn } from "@/lib/utils";
+import SiteFooter from "@/components/SiteFooter";
 
 const defaultLogo = "https://placehold.co/160x160?text=Logo";
 
@@ -171,19 +172,27 @@ const CompanyDetails = () => {
   }, [history]);
 
   if (companyLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center">Loading...</div>
+        <SiteFooter />
+      </>
+    );
   }
 
   if (companyError || !company) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold text-foreground">Company not found</h1>
-          <Link to="/leaderboard">
-            <Button variant="outline">Back to Leaderboard</Button>
-          </Link>
+      <>
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold text-foreground">Company not found</h1>
+            <Link to="/leaderboard">
+              <Button variant="outline">Back to Leaderboard</Button>
+            </Link>
+          </div>
         </div>
-      </div>
+        <SiteFooter />
+      </>
     );
   }
 
@@ -255,9 +264,20 @@ const CompanyDetails = () => {
     </div>
   );
 
+  const handleReviewButtonClick = () => {
+    if (!user) {
+      document.dispatchEvent(
+        new CustomEvent("open-auth-dialog", { detail: { mode: "signup" as const } })
+      );
+      return;
+    }
+    setShowReviewForm(prev => !prev);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <Link
           to="/leaderboard"
           className="inline-flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -299,7 +319,7 @@ const CompanyDetails = () => {
                   </div>
                   <div>
                     <div className="flex items-center justify-center space-x-1">
-                      <Star className="h-5 w-5 text-primary" />
+                      <Star className="h-5 w-5 text-gold" />
                       <span className="text-2xl font-bold text-foreground">
                         {averageRating !== null ? averageRating.toFixed(1) : "N/A"}
                       </span>
@@ -363,7 +383,7 @@ const CompanyDetails = () => {
                   {company.reviewCount} review{company.reviewCount === 1 ? "" : "s"} total
                 </p>
               </div>
-              <Button onClick={() => setShowReviewForm(prev => !prev)} variant="secondary">
+              <Button onClick={handleReviewButtonClick} variant="secondary">
                 {showReviewForm ? "Cancel" : "Write a review"}
               </Button>
             </div>
@@ -493,8 +513,10 @@ const CompanyDetails = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
-    </div>
+      <SiteFooter />
+    </>
   );
 };
 

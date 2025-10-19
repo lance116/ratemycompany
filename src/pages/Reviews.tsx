@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Star, Search, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
+import SiteFooter from "@/components/SiteFooter";
 
 const defaultLogo = "https://placehold.co/100x100?text=Logo";
 
@@ -38,7 +39,7 @@ const Reviews = () => {
           <Star
             key={star}
             className={`h-4 w-4 ${
-              star <= rounded ? "fill-primary text-primary" : "text-muted-foreground"
+              star <= rounded ? "fill-gold text-gold" : "text-gold/30"
             }`}
           />
         ))}
@@ -51,8 +52,9 @@ const Reviews = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
             SWE Internship Reviews
@@ -160,8 +162,10 @@ const Reviews = () => {
             </p>
           </div>
         )}
+        </div>
       </div>
-    </div>
+      <SiteFooter />
+    </>
   );
 };
 

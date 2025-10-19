@@ -61,7 +61,21 @@ export interface RecordMatchupResponseRow {
   wins: number;
   losses: number;
   draws: number;
+  rank: number | null;
+}
+
+export interface VoteMatchupCompany {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  tags: string[];
+  elo: number;
   rank: number;
+}
+
+export interface VoteMatchupPayload {
+  companies: [VoteMatchupCompany, VoteMatchupCompany];
+  totalVotes: number;
 }
 
 const formatPay = (value: number | null): string => {
@@ -280,4 +294,70 @@ export const recordMatchup = async (params: {
   }
 
   return data ?? [];
+};
+
+export const fetchVoteMatchup = async (): Promise<VoteMatchupPayload> => {
+  const { data, error } = await supabase
+    .from("company_leaderboard")
+    .select("id, name, logo_url, tags, rating, rank");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const companies = (data ?? []).map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    logoUrl: row.logo_url ?? null,
+    tags: Array.isArray(row.tags)
+      ? row.tags.map((tag: string) => tag.toUpperCase())
+      : [],
+    elo: Math.round(Number(row.rating ?? 0)),
+    rank: row.rank ?? 0,
+  }));
+
+  if (companies.length < 2) {
+    throw new Error("Need at least two companies for head-to-head voting.");
+  }
+
+  const pool = [...companies];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  let matchup: [VoteMatchupCompany, VoteMatchupCompany] | null = null;
+  const eloWindow = 300;
+
+  for (let i = 0; i < pool.length; i += 1) {
+    const base = pool[i];
+    const opponents = pool.filter(
+      candidate => candidate.id !== base.id && Math.abs(candidate.elo - base.elo) <= eloWindow
+    );
+
+    if (opponents.length === 0) {
+      continue;
+    }
+
+    const opponent = opponents[Math.floor(Math.random() * opponents.length)];
+    matchup = [base, opponent];
+    break;
+  }
+
+  if (!matchup) {
+    matchup = [pool[0], pool[1]];
+  }
+
+  const { count, error: countError } = await supabase
+    .from("matchups")
+    .select("*", { count: "exact", head: true });
+
+  if (countError) {
+    throw new Error(countError.message);
+  }
+
+  return {
+    companies: matchup,
+    totalVotes: count ?? 0,
+  };
 };

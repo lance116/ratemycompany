@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +41,19 @@ export const AuthDialog = () => {
     setIsOpen(false);
     resetState();
   };
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ mode?: "signin" | "signup" }>).detail;
+      setMode(detail?.mode ?? "signin");
+      setIsOpen(true);
+    };
+
+    document.addEventListener("open-auth-dialog", handler as EventListener);
+    return () => {
+      document.removeEventListener("open-auth-dialog", handler as EventListener);
+    };
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -1,550 +1,547 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchLeaderboardCompanies,
-  LeaderboardCompany,
-  recordMatchup,
-} from "@/data/companies";
-import { calculateEloChange } from "@/utils/elo";
-import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PayStats } from "@/components/ui/pay-stats";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Hash, Sparkles, Trophy } from "lucide-react";
-import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
+import {
+  fetchVoteMatchup,
+  recordMatchup,
+  VoteMatchupCompany,
+  VoteMatchupPayload,
+} from "@/data/companies";
+import SiteFooter from "@/components/SiteFooter";
 
-type CompanyPair = [LeaderboardCompany, LeaderboardCompany];
+type Selection = VoteMatchupCompany["id"] | "draw" | null;
 
-const defaultLogo = "https://placehold.co/160x160?text=Logo";
+type StatsDelta = {
+  elo: number;
+  rank: number;
+};
 
 const Vote = () => {
+  const [selection, setSelection] = useState<Selection>(null);
+  const [voteCount, setVoteCount] = useState<number>(0);
+  const [companies, setCompanies] = useState<[VoteMatchupCompany, VoteMatchupCompany] | null>(null);
+  const [statDeltas, setStatDeltas] = useState<Record<string, StatsDelta>>({});
+  const [statTriggers, setStatTriggers] = useState<Record<string, number>>({});
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [voteLocked, setVoteLocked] = useState(false);
+  const resetTimerRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useSupabaseAuth();
 
-  const { data: companies = [], isLoading } = useQuery({
-    queryKey: ["leaderboard"],
-    queryFn: fetchLeaderboardCompanies,
-    staleTime: 1000 * 30,
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery<VoteMatchupPayload>({
+    queryKey: ["vote-matchup"],
+    queryFn: fetchVoteMatchup,
+    refetchOnWindowFocus: false,
+    staleTime: 0,
   });
 
-  const [currentPair, setCurrentPair] = useState<CompanyPair | null>(null);
-  const [isVoting, setIsVoting] = useState(false);
-  const [votes, setVotes] = useState(0);
-  const [completedMatchups, setCompletedMatchups] = useState<Set<string>>(new Set());
-  const [displayedRatings, setDisplayedRatings] = useState<Record<string, number>>({});
-  const [displayedRanks, setDisplayedRanks] = useState<Record<string, number>>({});
-  const [eloDiffs, setEloDiffs] = useState<Record<string, number>>({});
-  const [rankDiffs, setRankDiffs] = useState<Record<string, number>>({});
-  const animationRef = useRef<number | null>(null);
-  const rankAnimationRef = useRef<number | null>(null);
-  const finalizeTimeoutRef = useRef<number | null>(null);
-  const interactionGateRef = useRef<{
-    animationDone: boolean;
-    rpcDone: boolean;
-    rankAnimationDone: boolean;
-    releaseScheduled: boolean;
-  }>({
-    animationDone: false,
-    rpcDone: false,
-    rankAnimationDone: true,
-    releaseScheduled: false,
-  });
-  const nextPairRef = useRef<CompanyPair | null>(null);
-  const [winnerHighlight, setWinnerHighlight] = useState<string | null>(null);
-
   useEffect(() => {
-    if (companies.length < 2) {
-      return;
+    if (data) {
+      setCompanies(data.companies);
+      setVoteCount(typeof data.totalVotes === "number" ? data.totalVotes : 0);
+      setSelection(null);
+      setStatDeltas({});
+      setStatTriggers({});
+      setMutationError(null);
+      setVoteLocked(false);
     }
-    setCurrentPair(prev => {
-      if (prev) {
-        return prev;
+  }, [data]);
+
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) {
+        window.clearTimeout(resetTimerRef.current);
       }
-      return getRandomPair(companies, [], new Set());
-    });
-  }, [companies]);
+    },
+    []
+  );
 
-  const companyPool = useMemo(() => companies, [companies]);
+  const voteMutation = useMutation({
+    mutationFn: recordMatchup,
+    onSuccess: (rows) => {
+      setMutationError(null);
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      rows.forEach((row) => {
+        queryClient.invalidateQueries({ queryKey: ["company", row.company_id] });
+        queryClient.invalidateQueries({ queryKey: ["companyEloHistory", row.company_id] });
+        queryClient.invalidateQueries({ queryKey: ["companyReviews", row.company_id] });
+      });
 
-  useEffect(() => {
-    if (!currentPair) {
-      return;
-    }
-    const [left, right] = currentPair;
-    setDisplayedRatings({
-      [left.id]: left.elo,
-      [right.id]: right.elo,
-    });
-    setEloDiffs({});
-    setDisplayedRanks(prev => ({
-      ...prev,
-      [left.id]: prev[left.id] ?? left.rank,
-      [right.id]: prev[right.id] ?? right.rank,
-    }));
-    setRankDiffs({});
-  }, [currentPair]);
-
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
+      if (!companies) {
+        return;
       }
-      if (rankAnimationRef.current) {
-        cancelAnimationFrame(rankAnimationRef.current);
-      }
-      if (finalizeTimeoutRef.current) {
-        clearTimeout(finalizeTimeoutRef.current);
-      }
-    };
-  }, []);
 
-  const createMatchupKey = (company1: LeaderboardCompany, company2: LeaderboardCompany) => {
-    const [id1, id2] = [company1.id, company2.id].sort((a, b) => a.localeCompare(b));
-    return `${id1}-${id2}`;
-  };
+      const updates = new Map(
+        rows.map((row) => [
+          row.company_id,
+          {
+            elo: Math.round(Number(row.rating ?? 0)),
+            rank: row.rank ?? null,
+          },
+        ])
+      );
 
-  const getRandomPair = (
-    companiesList: LeaderboardCompany[],
-    excludeIds: string[] = [],
-    completedSet: Set<string> = new Set()
-  ): CompanyPair => {
-    const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
-    const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
+      const updatedDeltas: Record<string, StatsDelta> = {};
 
-    for (let i = 0; i < shuffled.length; i += 1) {
-      for (let j = i + 1; j < shuffled.length; j += 1) {
-        const matchupKey = createMatchupKey(shuffled[i], shuffled[j]);
-        if (!completedSet.has(matchupKey)) {
-          return [shuffled[i], shuffled[j]];
+      setCompanies((prev) => {
+        if (!prev) {
+          return prev;
         }
-      }
-    }
 
-    return [shuffled[0], shuffled[1]];
-  };
+        const next = prev.map((company) => {
+          const update = updates.get(company.id);
+          if (!update) {
+            return company;
+          }
 
-  const animateEloChange = ({
-    winnerId,
-    loserId,
-    startWinner,
-    startLoser,
-    targetWinner,
-    targetLoser,
-    onComplete,
-  }: {
-    winnerId: string;
-    loserId: string;
-    startWinner: number;
-    startLoser: number;
-    targetWinner: number;
-    targetLoser: number;
-    onComplete: () => void;
-  }) => {
-    const duration = 900;
-    const startTime = performance.now();
+          const eloDelta = update.elo - company.elo;
+          let nextRank = company.rank;
+          let rankDelta = 0;
 
-    const step = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      setDisplayedRatings(prev => ({
-        ...prev,
-        [winnerId]: Math.round(startWinner + (targetWinner - startWinner) * progress),
-        [loserId]: Math.round(startLoser + (targetLoser - startLoser) * progress),
-      }));
+          if (eloDelta !== 0) {
+            const updatedRank =
+              typeof update.rank === "number" && update.rank > 0 ? update.rank : company.rank;
+            nextRank = updatedRank;
+            rankDelta = company.rank - updatedRank;
+          }
 
-      if (progress < 1) {
-        animationRef.current = requestAnimationFrame(step);
-      } else {
-        animationRef.current = null;
-        onComplete();
-      }
-    };
+          updatedDeltas[company.id] = {
+            elo: eloDelta,
+            rank: rankDelta,
+          };
 
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    animationRef.current = requestAnimationFrame(step);
-  };
+          return {
+            ...company,
+            elo: update.elo,
+            rank: nextRank,
+          };
+        }) as [VoteMatchupCompany, VoteMatchupCompany];
 
-  const animateRankChange = ({
-    updates,
-    onComplete,
-  }: {
-    updates: Array<{ id: string; start: number; target: number }>;
-    onComplete?: () => void;
-  }) => {
-    if (updates.length === 0) {
-      onComplete?.();
-      return;
-    }
+        return next;
+      });
 
-    const duration = 900;
-    const startTime = performance.now();
+      setStatDeltas(updatedDeltas);
+      setVoteCount((prev) => prev + 1);
 
-    const step = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      setDisplayedRanks(prev => {
+      const now = Date.now();
+      setStatTriggers((prev) => {
         const next = { ...prev };
-        updates.forEach(({ id, start, target }) => {
-          next[id] = Math.round(start + (target - start) * progress);
+        rows.forEach((row) => {
+          next[row.company_id] = now;
         });
         return next;
       });
 
-      if (progress < 1) {
-        rankAnimationRef.current = requestAnimationFrame(step);
-      } else {
-        rankAnimationRef.current = null;
-        onComplete?.();
+      if (resetTimerRef.current) {
+        window.clearTimeout(resetTimerRef.current);
       }
-    };
 
-    if (rankAnimationRef.current) {
-      cancelAnimationFrame(rankAnimationRef.current);
-    }
-    rankAnimationRef.current = requestAnimationFrame(step);
-  };
+      resetTimerRef.current = window.setTimeout(() => {
+        refetch();
+      }, 900);
+    },
+    onError: (err: Error) => {
+      setMutationError(err.message);
+      setVoteLocked(false);
+    },
+  });
 
-  const handleDontKnow = () => {
-    if (!currentPair) {
-      return;
-    }
-
-    const newPair = getRandomPair(companyPool, [], completedMatchups);
-    setEloDiffs({});
-    setRankDiffs({});
-    setWinnerHighlight(null);
-    setCurrentPair(newPair);
-  };
-
-  const handleVote = async (winner: LeaderboardCompany) => {
-    if (isVoting || !currentPair) {
-      return;
-    }
-
-    setIsVoting(true);
-    setVotes(prev => prev + 1);
-    interactionGateRef.current = {
-      animationDone: false,
-      rpcDone: false,
-      rankAnimationDone: true,
-      releaseScheduled: false,
-    };
-    setWinnerHighlight(winner.id);
-
-    const releaseGate = () => {
-      const gate = interactionGateRef.current;
-      if (gate.releaseScheduled) {
-        return;
-      }
-      if (gate.animationDone && gate.rpcDone && gate.rankAnimationDone) {
-        gate.releaseScheduled = true;
-        const finalize = () => {
-          finalizeTimeoutRef.current = null;
-          setIsVoting(false);
-          const pendingPair = nextPairRef.current;
-          nextPairRef.current = null;
-          setWinnerHighlight(null);
-          setEloDiffs({});
-          setRankDiffs({});
-          if (pendingPair) {
-            setCurrentPair(pendingPair);
-          }
-        };
-        if (finalizeTimeoutRef.current) {
-          clearTimeout(finalizeTimeoutRef.current);
-        }
-        finalizeTimeoutRef.current = window.setTimeout(finalize, 160);
-      }
-    };
-
-    const [leftCompany, rightCompany] = currentPair;
-    const loser = winner.id === leftCompany.id ? rightCompany : leftCompany;
-
-    const matchupKey = createMatchupKey(winner, loser);
-    const { winnerNewRating, loserNewRating } = calculateEloChange(winner.elo, loser.elo);
-    const optimisticCompanies = companyPool.map(company => {
-      const currentRank = displayedRanks[company.id] ?? company.rank;
-      if (company.id === winner.id) {
-        return { ...company, elo: winnerNewRating, rank: currentRank };
-      }
-      if (company.id === loser.id) {
-        return { ...company, elo: loserNewRating, rank: currentRank };
-      }
-      return { ...company, rank: currentRank };
-    });
-
-    queryClient.setQueryData(["leaderboard"], optimisticCompanies);
-
-    const startWinnerRating = displayedRatings[winner.id] ?? winner.elo;
-    const startLoserRating = displayedRatings[loser.id] ?? loser.elo;
-
-    setEloDiffs({
-      [winner.id]: Math.round(winnerNewRating - startWinnerRating),
-      [loser.id]: Math.round(loserNewRating - startLoserRating),
-    });
-
-    const newCompletedMatchups = new Set([...completedMatchups, matchupKey]);
-    setCompletedMatchups(newCompletedMatchups);
-
-    const nextPair = getRandomPair(optimisticCompanies, [], newCompletedMatchups);
-    nextPairRef.current = nextPair;
-
-    animateEloChange({
-      winnerId: winner.id,
-      loserId: loser.id,
-      startWinner: startWinnerRating,
-      startLoser: startLoserRating,
-      targetWinner: winnerNewRating,
-      targetLoser: loserNewRating,
-      onComplete: () => {
-        interactionGateRef.current = {
-          ...interactionGateRef.current,
-          animationDone: true,
-        };
-        releaseGate();
-      },
-    });
-
-    try {
-      const result = winner.id === leftCompany.id ? "a" : "b";
-      const updatedRows = await recordMatchup({
-        companyA: leftCompany.id,
-        companyB: rightCompany.id,
-        result,
-        submittedBy: user?.id ?? null,
-      });
-
-      if (Array.isArray(updatedRows) && updatedRows.length > 0) {
-        const rankUpdates: Array<{ id: string; start: number; target: number }> = [];
-        const rankDiffAccumulator: Record<string, number> = {};
-
-        queryClient.setQueryData<LeaderboardCompany[]>(["leaderboard"], previous => {
-          if (!previous) {
-            return previous;
-          }
-          const updateMap = new Map(updatedRows.map(row => [row.company_id, row]));
-
-          return previous.map(company => {
-            const update = updateMap.get(company.id);
-            if (!update) {
-              return company;
-            }
-
-            if (company.id === winner.id || company.id === loser.id) {
-              const startRank = (displayedRanks[company.id] ?? company.rank) ?? update.rank;
-              const targetRank = update.rank;
-              if (startRank !== targetRank) {
-                rankUpdates.push({
-                  id: company.id,
-                  start: startRank,
-                  target: targetRank,
-                });
-                rankDiffAccumulator[company.id] = targetRank - startRank;
-              }
-            }
-
-            return {
-              ...company,
-              elo: Math.round(Number(update.rating)),
-              matchesPlayed: update.matches_played,
-              wins: update.wins,
-              losses: update.losses,
-              draws: update.draws,
-              rank: update.rank,
-            };
-          });
-        });
-
-        if (rankUpdates.length > 0) {
-          setRankDiffs(prev => ({ ...prev, ...rankDiffAccumulator }));
-          interactionGateRef.current = {
-            ...interactionGateRef.current,
-            rankAnimationDone: false,
-          };
-          animateRankChange({
-            updates: rankUpdates,
-            onComplete: () => {
-              setDisplayedRanks(prev => {
-                const next = { ...prev };
-                rankUpdates.forEach(({ id, target }) => {
-                  next[id] = target;
-                });
-                return next;
-              });
-              interactionGateRef.current = {
-                ...interactionGateRef.current,
-                rankAnimationDone: true,
-              };
-              releaseGate();
-            },
-          });
-        } else {
-          interactionGateRef.current = {
-            ...interactionGateRef.current,
-            rankAnimationDone: true,
-          };
-          releaseGate();
-        }
-      }
-    } catch (error) {
-      console.error("Failed to record matchup", error);
-    } finally {
-      await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      interactionGateRef.current = {
-        ...interactionGateRef.current,
-        rpcDone: true,
-      };
-      releaseGate();
-    }
-  };
-
-  if (isLoading || !currentPair) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (isLoading && !companies) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white text-slate-900">
+        Loading live matchup...
+      </div>
+    );
   }
 
-  const [leftCompany, rightCompany] = currentPair;
-
-  const renderCompanyCard = (company: LeaderboardCompany) => {
-    const logo = company.logoUrl ?? defaultLogo;
-    const currentRating = displayedRatings[company.id] ?? company.elo;
-    const ratingDiff = eloDiffs[company.id] ?? 0;
-    const currentRank = displayedRanks[company.id] ?? company.rank;
-    const rankDiff = rankDiffs[company.id] ?? 0;
+  if (error) {
     return (
-      <Card
-        key={company.id}
-        className={cn(
-          "group relative w-full cursor-pointer overflow-hidden border border-border bg-card text-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-foreground/30 hover:shadow-lg",
-          winnerHighlight === company.id && "md:-translate-y-3 border-primary shadow-lg"
-        )}
-        onClick={() => handleVote(company)}
-      >
-        <CardContent className="relative flex flex-col items-center gap-4 p-6 text-center">
-          <div className="relative w-full">
-            <div
-              className={cn(
-                "mx-auto flex h-36 w-full max-w-xs items-center justify-center overflow-hidden rounded-2xl bg-secondary shadow-inner transition duration-300",
-                winnerHighlight === company.id ? "bg-secondary/60" : "group-hover:bg-secondary/80"
-              )}
-            >
-              <img
-                src={logo}
-                alt={company.name}
-                className="h-28 w-28 object-contain transition-transform duration-300 group-hover:scale-105"
-              />
-            </div>
-          </div>
-          <h3 className="text-xl font-bold tracking-tight md:text-2xl">
-            {company.name}
-          </h3>
-          <div className="flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-muted-foreground">
-            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 shadow-inner transition group-hover:bg-secondary/80">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                <Trophy className="h-4 w-4" />
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xs uppercase tracking-[0.25em]">Elo</span>
-                <span className="text-base font-semibold">
-                  {currentRating}
-                </span>
-                {ratingDiff !== 0 && (
-                  <span
-                    className={cn(
-                      "text-xs font-semibold transition-colors duration-500",
-                      ratingDiff > 0 ? "text-emerald-500" : "text-rose-500"
-                    )}
-                  >
-                    {ratingDiff > 0 ? "+" : ""}
-                    {ratingDiff}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 shadow-inner transition group-hover:bg-secondary/80">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                <Hash className="h-4 w-4" />
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xs uppercase tracking-[0.25em]">Rank</span>
-                <span className="text-base font-semibold">{currentRank}</span>
-                {rankDiff !== 0 && (
-                  <span
-                    className={cn(
-                      "text-xs font-semibold transition-colors duration-500",
-                      rankDiff < 0 ? "text-emerald-500" : "text-rose-500"
-                    )}
-                  >
-                    {rankDiff > 0 ? "+" : ""}
-                    {rankDiff}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.25em] text-muted-foreground/80">
-            {company.tags.slice(0, 4).map(tag => (
-              <span key={tag} className="rounded-full border border-border bg-secondary px-2 py-1 uppercase">
-                {tag.toUpperCase()}
-              </span>
-            ))}
-          </div>
-          <div className="mt-4 w-full">
-            <PayStats pay={company.payDisplay} className="justify-center text-sm" />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-white px-6 text-center text-slate-900">
+        <p className="text-lg font-semibold">Something went wrong loading the matchup.</p>
+        <p className="mt-2 text-sm text-slate-500">{error.message}</p>
+        <Button className="mt-6" onClick={() => refetch()}>
+          Try Again
+        </Button>
+      </div>
     );
+  }
+
+  if (!companies) {
+    return null;
+  }
+
+  const [leftCompany, rightCompany] = companies;
+
+  const handleCompanySelect = (companyId: string) => {
+    if (!companies || voteMutation.isPending || voteLocked) {
+      return;
+    }
+
+    setSelection(companyId);
+    setVoteLocked(true);
+    const now = Date.now();
+    setStatTriggers((prev) => ({
+      ...prev,
+      [leftCompany.id]: now,
+      [rightCompany.id]: now,
+    }));
+
+    const result: "a" | "b" = companyId === leftCompany.id ? "a" : "b";
+
+    if (resetTimerRef.current) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
+    voteMutation.mutate({
+      companyA: leftCompany.id,
+      companyB: rightCompany.id,
+      result,
+    });
+  };
+
+  const handleDraw = () => {
+    if (!companies || voteMutation.isPending || voteLocked) {
+      return;
+    }
+
+    setSelection("draw");
+    setVoteLocked(true);
+    const now = Date.now();
+    setStatTriggers((prev) => ({
+      ...prev,
+      [leftCompany.id]: now,
+      [rightCompany.id]: now,
+    }));
+
+    if (resetTimerRef.current) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
+    voteMutation.mutate({
+      companyA: leftCompany.id,
+      companyB: rightCompany.id,
+      result: "draw",
+    });
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 pt-4 pb-8 md:pt-6 md:pb-10 space-y-6">
-        <div className="rounded-2xl border border-border bg-card px-6 py-6 md:px-8 md:py-7 text-center shadow-sm">
-          <Badge variant="outline" className="mb-4 px-4 py-1 text-xs uppercase tracking-[0.35em]">
+    <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
+      <BackgroundCanvas />
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.45em] text-amber-500">
             Live Head-to-Head
-          </Badge>
-          <h1 className="text-3xl font-bold md:text-4xl">
-            Which SWE internship would you prefer?
+          </p>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-[2.15rem]">
+            Which company would you rather work at?
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground/90">
+          <p className="mt-3 text-sm text-slate-600 sm:text-base">
             Cast your vote and watch the Elo rankings update live. Upsets make the leaderboard swing!
           </p>
-          <div className="mt-6 flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-            <Trophy size={16} />
-            <span className="tabular-nums">{votes} votes recorded</span>
+          <div className="mt-4 inline-flex items-center gap-3 rounded-full border border-amber-400/50 bg-amber-100/70 px-5 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-amber-600">
+            <Trophy className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
+            <span className="tabular-nums text-slate-800">
+              {voteCount.toLocaleString()} total votes recorded
+            </span>
           </div>
-        </div>
+          {mutationError && (
+            <p className="mt-4 text-xs font-semibold text-rose-500">{mutationError}</p>
+          )}
+        </section>
 
-        <div className="flex flex-1 flex-col items-center space-y-5 pb-6">
-          <div className="flex w-full flex-1 flex-col gap-4 md:flex-row md:items-stretch md:justify-between">
-            {renderCompanyCard(leftCompany)}
+        <section className="mt-6 flex flex-1 flex-col justify-center">
+          <div className="rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-3 sm:gap-4">
+              <CompanyCard
+                company={leftCompany}
+                isWinner={selection === leftCompany.id}
+                isLoser={
+                  selection !== null && selection !== "draw" && selection !== leftCompany.id
+                }
+                statDelta={statDeltas[leftCompany.id]}
+                statTrigger={statTriggers[leftCompany.id]}
+                disabled={voteMutation.isPending || voteLocked}
+                onSelect={() => handleCompanySelect(leftCompany.id)}
+              />
 
-            <div className="flex h-full items-center justify-center">
-              <div className="rounded-full border border-border bg-card px-6 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground shadow-sm">
-                VS
+              <div className="flex items-center">
+                <span className="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-4 text-[10px] font-semibold uppercase tracking-[0.6em] text-slate-600 shadow-[0_12px_32px_-24px_rgba(15,23,42,0.45)] sm:h-14 sm:px-5">
+                  VS
+                </span>
               </div>
-            </div>
 
-            {renderCompanyCard(rightCompany)}
+              <CompanyCard
+                company={rightCompany}
+                isWinner={selection === rightCompany.id}
+                isLoser={
+                  selection !== null && selection !== "draw" && selection !== rightCompany.id
+                }
+                statDelta={statDeltas[rightCompany.id]}
+                statTrigger={statTriggers[rightCompany.id]}
+                disabled={voteMutation.isPending || voteLocked}
+                onSelect={() => handleCompanySelect(rightCompany.id)}
+              />
+            </div>
           </div>
 
-          <div className="w-full max-w-md">
+          <div className="mt-2 flex justify-center">
             <Button
-              variant="default"
-              size="lg"
-              className="w-full gap-3 rounded-full bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90"
-              onClick={handleDontKnow}
-              disabled={isVoting}
+              type="button"
+              onClick={handleDraw}
+              disabled={voteMutation.isPending || voteLocked}
+              className={cn(
+                "w-full max-w-xs rounded-2xl border border-amber-400/70 bg-amber-400 px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/80",
+                "disabled:pointer-events-none disabled:bg-amber-400 disabled:text-slate-900 disabled:opacity-100 disabled:shadow-[0_12px_28px_-24px_rgba(217,119,6,0.65)]",
+                selection === "draw" && "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-white"
+              )}
             >
-              <Sparkles className="h-5 w-5" />
-              <span className="text-base font-semibold uppercase tracking-[0.25em]">I&apos;m not sure</span>
+              Draw/Tie
             </Button>
           </div>
+        </section>
+      </div>
+
+      {isFetching && (
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-white/30 via-white/10 to-transparent" />
+      )}
+
+      <SiteFooter className="relative z-10" />
+    </div>
+  );
+};
+
+type CardProps = {
+  company: VoteMatchupCompany;
+  isWinner: boolean;
+  isLoser: boolean;
+  statDelta?: StatsDelta;
+  statTrigger?: number;
+  disabled?: boolean;
+  onSelect: () => void;
+};
+
+const CompanyCard = ({
+  company,
+  isWinner,
+  isLoser,
+  statDelta,
+  statTrigger,
+  disabled,
+  onSelect,
+}: CardProps) => {
+  const logoSrc = company.logoUrl ?? "/placeholder.svg";
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled}
+      className={cn(
+      "vote-card relative flex min-h-[20rem] flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70",
+      "disabled:cursor-not-allowed disabled:opacity-80",
+      !isWinner &&
+        !isLoser &&
+        "hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-white hover:brightness-105 hover:saturate-110 hover:shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)]",
+        isWinner &&
+          "winner-glow border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/60",
+        isLoser && "loser-sink border-slate-200/60"
+      )}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.14),transparent_65%)]" />
+      <div className="relative z-10 flex h-full flex-col gap-6">
+        <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
+          <img
+            src={logoSrc}
+            alt={`${company.name} logo`}
+            className="mx-auto h-20 w-full object-contain"
+          />
         </div>
+
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              {company.name}
+            </h2>
+
+            <div className="flex flex-wrap items-baseline gap-2">
+              <AnimatedStat
+                label="Elo"
+                value={company.elo}
+                delta={statDelta?.elo}
+                trigger={statTrigger}
+              />
+              <AnimatedStat
+                label="Rank"
+                value={company.rank}
+                delta={statDelta?.rank}
+                trigger={statTrigger}
+              />
+            </div>
+          </div>
+
+          {company.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {company.tags.map((trait) => (
+                <span
+                  key={trait}
+                  className="rounded-full border border-slate-200 bg-slate-100 px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.45em] text-slate-600"
+                >
+                  {trait}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+};
+
+type AnimatedStatProps = {
+  label: string;
+  value: number;
+  delta?: number;
+  trigger?: number;
+};
+
+const AnimatedStat = ({ label, value, delta, trigger }: AnimatedStatProps) => {
+  const [displayValue, setDisplayValue] = useState<number>(value);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [direction, setDirection] = useState<"rise" | "fall" | "steady">("steady");
+  const intervalRef = useRef<number | null>(null);
+  const prevValueRef = useRef<number>(value);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (trigger === undefined) {
+      setDisplayValue(value);
+      prevValueRef.current = value;
+      setDirection("steady");
+      return;
+    }
+
+    const previous = prevValueRef.current;
+    if (previous === value) {
+      setDisplayValue(value);
+      prevValueRef.current = value;
+      setDirection("steady");
+      return;
+    }
+
+    const diff = value - previous;
+    if (diff < 0) {
+      setDirection("rise");
+    } else if (diff > 0) {
+      setDirection("fall");
+    } else {
+      setDirection("steady");
+    }
+
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+    }
+
+    setIsAnimating(true);
+    let current = previous;
+    const step = diff > 0 ? 1 : -1;
+    const steps = Math.max(1, Math.abs(Math.round(diff)));
+    const intervalDuration = Math.max(24, Math.min(75, 260 / steps));
+
+    intervalRef.current = window.setInterval(() => {
+      if (current === value) {
+        if (intervalRef.current) {
+          window.clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        setIsAnimating(false);
+        prevValueRef.current = value;
+        return;
+      }
+
+      current += step;
+      if ((step > 0 && current > value) || (step < 0 && current < value)) {
+        current = value;
+      }
+      setDisplayValue(current);
+    }, intervalDuration);
+
+    return () => {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [value, trigger]);
+
+  useEffect(() => {
+    if (trigger === undefined) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setIsAnimating(false), 950);
+    return () => window.clearTimeout(timeout);
+  }, [trigger]);
+
+  const deltaRounded =
+    delta !== undefined && !Number.isNaN(delta) ? Math.round(delta) : undefined;
+  const showDelta = trigger !== undefined && deltaRounded !== undefined;
+  const deltaClass =
+    deltaRounded !== undefined && deltaRounded > 0
+      ? "text-emerald-500"
+      : deltaRounded !== undefined && deltaRounded < 0
+      ? "text-rose-500"
+      : "text-slate-400";
+
+  return (
+    <div
+      className={cn(
+        "vote-stat flex items-baseline gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 shadow-[0_16px_32px_-30px_rgba(15,23,42,0.6)] backdrop-blur-sm transition-transform",
+        isAnimating && "vote-stat--pulse",
+        direction === "rise" && "vote-stat--rise",
+        direction === "fall" && "vote-stat--fall"
+      )}
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-[0.38em] text-slate-500">
+        {label}
+      </span>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-lg font-semibold text-slate-900 tabular-nums">{displayValue}</span>
+        {showDelta && (
+          <span className={cn("text-[0.75rem] font-semibold tabular-nums", deltaClass)}>
+            {deltaRounded !== undefined
+              ? deltaRounded > 0
+                ? `+${deltaRounded}`
+                : deltaRounded < 0
+                ? deltaRounded
+                : "+0"
+              : null}
+          </span>
+        )}
       </div>
     </div>
   );
 };
+
+const BackgroundCanvas = () => (
+  <div aria-hidden className="pointer-events-none">
+    <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-amber-200 via-white/40 to-transparent" />
+  </div>
+);
 
 export default Vote;

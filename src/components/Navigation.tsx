@@ -22,7 +22,7 @@ const Navigation = () => {
               <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">R</span>
               </div>
-              <span className="text-xl font-bold text-foreground">RateMyCoop</span>
+              <span className="text-xl font-bold text-foreground">ratemycompany</span>
             </Link>
           </div>
 
