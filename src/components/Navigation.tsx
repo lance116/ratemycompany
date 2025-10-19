@@ -113,9 +113,6 @@ const Navigation = () => {
           </div>
         )}
       </nav>
-
-      {/* Add padding to body on mobile to account for bottom nav */}
-      <div className="sm:hidden h-16" />
     </>
   );
 };
