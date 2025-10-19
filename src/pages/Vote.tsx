@@ -17,6 +17,66 @@ type StatsDelta = {
   rank: number;
 };
 
+type ViewportSize = {
+  width: number;
+  height: number;
+};
+
+type VoteLayout = ViewportSize & {
+  isCompact: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+  isShortHeight: boolean;
+  isLandscape: boolean;
+};
+
+const useViewportSize = (): ViewportSize => {
+  const [viewport, setViewport] = useState<ViewportSize>(() => ({
+    width: typeof window === "undefined" ? 0 : window.innerWidth,
+    height: typeof window === "undefined" ? 0 : window.innerHeight,
+  }));
+
+  useEffect(() => {
+    const updateViewport = () => {
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+    };
+  }, []);
+
+  return viewport;
+};
+
+const useVoteLayout = (): VoteLayout => {
+  const viewport = useViewportSize();
+  const { width, height } = viewport;
+
+  const isCompact = width > 0 && width <= 420;
+  const isTablet = width >= 768 && width < 1180;
+  const isDesktop = width >= 1180;
+  const isShortHeight = height > 0 && height < 760;
+  const isLandscape = width > 0 && height > 0 && width > height;
+
+  return {
+    ...viewport,
+    isCompact,
+    isTablet,
+    isDesktop,
+    isShortHeight,
+    isLandscape,
+  };
+};
+
 const Vote = () => {
   const [selection, setSelection] = useState<Selection>(null);
   const [voteCount, setVoteCount] = useState<number>(0);
@@ -27,6 +87,7 @@ const Vote = () => {
   const [voteLocked, setVoteLocked] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
+  const layout = useVoteLayout();
 
   const {
     data,
@@ -235,19 +296,52 @@ const Vote = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
       <BackgroundCanvas />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 pt-0 pb-4 sm:py-12 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-3 pb-5 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
+      <div
+        className={cn(
+          "relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 pt-0 pb-4 sm:py-12 sm:px-6 lg:px-8",
+          layout.isCompact && "pt-4 pb-6",
+          layout.isShortHeight && "sm:pt-9 sm:pb-10",
+          layout.isTablet && "sm:px-8",
+          layout.isDesktop && "sm:px-10"
+        )}
+      >
+        <section
+          className={cn(
+            "rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-3 pb-5 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9",
+            layout.isCompact && "px-5 pb-4",
+            layout.isShortHeight && "sm:py-6",
+            layout.isTablet && "sm:px-10"
+          )}
+        >
           <p className="text-[11px] font-semibold uppercase tracking-[0.45em] text-amber-500">
             Live Head-to-Head
           </p>
-          <h1 className="mt-2 sm:mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-[2.15rem]">
+          <h1
+            className={cn(
+              "mt-2 sm:mt-4 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl md:text-[2.15rem]",
+              layout.isCompact && "text-[1.7rem] leading-snug"
+            )}
+          >
             Which company would you rather work at?
           </h1>
-          <p className="mt-2 sm:mt-3 text-sm text-slate-600 sm:text-base">
+          <p
+            className={cn(
+              "mt-2 sm:mt-3 text-sm text-slate-600 sm:text-base",
+              layout.isCompact && "text-[0.85rem]"
+            )}
+          >
             Cast your vote and watch the Elo rankings update live. Upsets make the leaderboard swing!
           </p>
-          <div className="mt-3 sm:mt-4 inline-flex items-center gap-3 rounded-full border border-amber-400/50 bg-amber-100/70 px-5 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-amber-600">
-            <Trophy className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
+          <div
+            className={cn(
+              "mt-3 sm:mt-4 inline-flex items-center gap-3 rounded-full border border-amber-400/50 bg-amber-100/70 px-5 py-1.5 text-xs font-semibold uppercase tracking-[0.4em] text-amber-600",
+              layout.isCompact && "gap-2 px-4 py-1"
+            )}
+          >
+            <Trophy
+              className={cn("h-4 w-4 text-amber-500", layout.isCompact && "h-3.5 w-3.5")}
+              strokeWidth={1.5}
+            />
             <span className="tabular-nums text-slate-800">
               {voteCount.toLocaleString()} total votes recorded
             </span>
@@ -257,9 +351,27 @@ const Vote = () => {
           )}
         </section>
 
-        <section className="mt-3 sm:mt-6 flex flex-1 flex-col justify-center">
-          <div className="rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6">
-            <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4">
+        <section
+          className={cn(
+            "mt-3 sm:mt-6 flex flex-1 flex-col justify-center",
+            layout.isCompact && "mt-4",
+            layout.isShortHeight && "sm:mt-5"
+          )}
+        >
+          <div
+            className={cn(
+              "rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6",
+              layout.isCompact && "rounded-[2rem] p-3",
+              layout.isTablet && "sm:p-7"
+            )}
+          >
+            <div
+              className={cn(
+                "grid grid-cols-2 items-stretch gap-3 sm:gap-4",
+                layout.isCompact && "gap-2",
+                layout.isTablet && "gap-5"
+              )}
+            >
               <CompanyCard
                 company={leftCompany}
                 isWinner={selection === leftCompany.id}
@@ -270,6 +382,7 @@ const Vote = () => {
                 statTrigger={statTriggers[leftCompany.id]}
                 disabled={voteMutation.isPending || voteLocked}
                 onSelect={() => handleCompanySelect(leftCompany.id)}
+                layout={layout}
               />
 
               <CompanyCard
@@ -282,11 +395,17 @@ const Vote = () => {
                 statTrigger={statTriggers[rightCompany.id]}
                 disabled={voteMutation.isPending || voteLocked}
                 onSelect={() => handleCompanySelect(rightCompany.id)}
+                layout={layout}
               />
             </div>
           </div>
 
-          <div className="mt-3 sm:mt-2 flex justify-center">
+          <div
+            className={cn(
+              "mt-3 sm:mt-2 flex justify-center",
+              layout.isCompact && "mt-4"
+            )}
+          >
             <Button
               type="button"
               onClick={handleDraw}
@@ -294,7 +413,8 @@ const Vote = () => {
               className={cn(
                 "w-full max-w-xs rounded-2xl border border-amber-400/70 bg-amber-400 px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/80",
                 "disabled:pointer-events-none disabled:bg-amber-400 disabled:text-slate-900 disabled:opacity-100 disabled:shadow-[0_12px_28px_-24px_rgba(217,119,6,0.65)]",
-                selection === "draw" && "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-white"
+                selection === "draw" && "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-white",
+                layout.isCompact && "max-w-sm px-5 py-2.5 text-[0.72rem] tracking-[0.36em]"
               )}
             >
               Draw/Tie
@@ -369,6 +489,7 @@ type CardProps = {
   statTrigger?: number;
   disabled?: boolean;
   onSelect: () => void;
+  layout: VoteLayout;
 };
 
 const CompanyCard = ({
@@ -379,9 +500,11 @@ const CompanyCard = ({
   statTrigger,
   disabled,
   onSelect,
+  layout,
 }: CardProps) => {
   const logoSrc = company.logoUrl ?? "/placeholder.svg";
   const [wasTouched, setWasTouched] = useState(false);
+  const sizeVariant = layout.isCompact ? "compact" : layout.isTablet ? "tablet" : "default";
 
   const handleClick = () => {
     setWasTouched(true);
@@ -394,10 +517,14 @@ const CompanyCard = ({
       onClick={handleClick}
       disabled={disabled}
       className={cn(
-      "vote-card relative flex h-full min-h-[20rem] w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7 sm:text-center",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70",
-      "disabled:cursor-not-allowed disabled:opacity-80",
-      !isWinner &&
+        "vote-card relative flex h-full min-h-[20rem] w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7 sm:text-center",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70",
+        "disabled:cursor-not-allowed disabled:opacity-80",
+        sizeVariant === "compact" && "min-h-[18rem] rounded-[1.7rem] px-3.5 py-5 sm:px-5",
+        layout.isShortHeight && "min-h-[18.5rem]",
+        sizeVariant === "tablet" && "min-h-[21.5rem] px-5 py-6 sm:px-7",
+        layout.isLandscape && !layout.isDesktop && "sm:text-left",
+        !isWinner &&
         !isLoser &&
         !wasTouched &&
         "hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-white hover:brightness-105 hover:saturate-110 hover:shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)]",
@@ -412,34 +539,79 @@ const CompanyCard = ({
           isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
         )}
       />
-      <div className="relative z-10 flex h-full flex-col items-center justify-between gap-4 text-center">
-        <div className="flex w-full flex-col items-center gap-4">
-          <div className="flex w-full min-h-[10rem] items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
+      <div
+        className={cn(
+          "relative z-10 flex h-full flex-col items-center justify-between gap-4 text-center",
+          sizeVariant === "compact" && "gap-3",
+          sizeVariant === "tablet" && "gap-5",
+          layout.isLandscape && "justify-center"
+        )}
+      >
+        <div
+          className={cn(
+            "flex w-full flex-col items-center gap-4",
+            sizeVariant === "compact" && "gap-3"
+          )}
+        >
+          <div
+            className={cn(
+              "flex w-full min-h-[10rem] items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]",
+              sizeVariant === "compact" && "min-h-[8.5rem] rounded-[1.35rem] px-3.5 py-6",
+              sizeVariant === "tablet" && "min-h-[11.5rem] rounded-[1.65rem] px-5 py-8"
+            )}
+          >
             <img
               src={logoSrc}
               alt={`${company.name} logo`}
-              className="h-20 w-auto object-contain"
+              className={cn(
+                "h-20 w-auto object-contain",
+                sizeVariant === "compact" && "h-16",
+                sizeVariant === "tablet" && "h-24"
+              )}
             />
           </div>
 
-          <div className="flex w-full flex-col items-center gap-2">
-            <h2 className="flex min-h-[6.5rem] items-center justify-center text-2xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl">
+          <div
+            className={cn(
+              "flex w-full flex-col items-center gap-2",
+              sizeVariant === "compact" && "gap-1.5"
+            )}
+          >
+            <h2
+              className={cn(
+                "flex min-h-[6.5rem] items-center justify-center text-2xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl",
+                sizeVariant === "compact" && "min-h-[5.5rem] text-xl",
+                sizeVariant === "tablet" && "text-[1.75rem] sm:text-[2.15rem]"
+              )}
+            >
               {company.name}
             </h2>
 
-            <div className="flex min-h-[3.5rem] items-center justify-center">
-              <div className="flex flex-wrap items-baseline gap-2">
+            <div
+              className={cn(
+                "flex min-h-[3.5rem] items-center justify-center",
+                sizeVariant === "compact" && "min-h-[3rem]"
+              )}
+            >
+              <div
+                className={cn(
+                  "flex flex-wrap items-baseline gap-2",
+                  sizeVariant === "compact" && "gap-1.5"
+                )}
+              >
                 <AnimatedStat
                   label="Elo"
                   value={company.elo}
                   delta={statDelta?.elo}
                   trigger={statTrigger}
+                  size={sizeVariant}
                 />
                 <AnimatedStat
                   label="Rank"
                   value={company.rank}
                   delta={statDelta?.rank}
                   trigger={statTrigger}
+                  size={sizeVariant}
                 />
               </div>
             </div>
@@ -447,7 +619,12 @@ const CompanyCard = ({
         </div>
 
         {company.tags.length > 0 && (
-          <div className="hidden w-full flex-wrap items-center justify-center gap-2 sm:flex">
+          <div
+            className={cn(
+              "hidden w-full flex-wrap items-center justify-center gap-2 sm:flex",
+              sizeVariant === "tablet" && "gap-2.5"
+            )}
+          >
             {company.tags.map((trait) => (
               <span
                 key={trait}
@@ -468,9 +645,10 @@ type AnimatedStatProps = {
   value: number;
   delta?: number;
   trigger?: number;
+  size?: "compact" | "tablet" | "default";
 };
 
-const AnimatedStat = ({ label, value, delta, trigger }: AnimatedStatProps) => {
+const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: AnimatedStatProps) => {
   const [displayValue, setDisplayValue] = useState<number>(value);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<"rise" | "fall" | "steady">("steady");
@@ -564,22 +742,57 @@ const AnimatedStat = ({ label, value, delta, trigger }: AnimatedStatProps) => {
       ? "text-rose-500"
       : "text-slate-400";
 
+  const sizeStyles = {
+    default: {
+      container: "gap-1.5 px-3.5 py-1.5",
+      label: "text-[10px] tracking-[0.38em]",
+      value: "text-lg",
+      delta: "text-[0.75rem]",
+      innerGap: "gap-1.5",
+    },
+    compact: {
+      container: "gap-1 px-2.5 py-1",
+      label: "text-[9px] tracking-[0.34em]",
+      value: "text-base",
+      delta: "text-xs",
+      innerGap: "gap-1",
+    },
+    tablet: {
+      container: "gap-1.5 px-4 py-1.75",
+      label: "text-[10px] tracking-[0.4em]",
+      value: "text-xl",
+      delta: "text-sm",
+      innerGap: "gap-1.5",
+    },
+  } as const;
+
+  const { container, label: labelSize, value: valueSize, delta: deltaSize, innerGap } =
+    sizeStyles[size];
+
   return (
     <div
       className={cn(
-        "vote-stat flex items-baseline gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 shadow-[0_16px_32px_-30px_rgba(15,23,42,0.6)] backdrop-blur-sm transition-transform",
+        "vote-stat flex items-baseline rounded-full bg-white/70 shadow-[0_16px_32px_-30px_rgba(15,23,42,0.6)] backdrop-blur-sm transition-transform",
+        container,
         isAnimating && "vote-stat--pulse",
         direction === "rise" && "vote-stat--rise",
         direction === "fall" && "vote-stat--fall"
       )}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-[0.38em] text-slate-500">
+      <span
+        className={cn(
+          "font-semibold uppercase text-slate-500",
+          labelSize
+        )}
+      >
         {label}:
       </span>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-lg font-semibold text-slate-900 tabular-nums">{displayValue}</span>
+      <div className={cn("flex items-baseline", innerGap)}>
+        <span className={cn("font-semibold text-slate-900 tabular-nums", valueSize)}>
+          {displayValue}
+        </span>
         {showDelta && (
-          <span className={cn("text-[0.75rem] font-semibold tabular-nums", deltaClass)}>
+          <span className={cn("font-semibold tabular-nums", deltaSize, deltaClass)}>
             {deltaRounded !== undefined
               ? deltaRounded > 0
                 ? `+${deltaRounded}`
