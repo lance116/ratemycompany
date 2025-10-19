@@ -295,6 +295,7 @@ All colors MUST be HSL.
   @media (max-width: 640px) {
     .winner-glow {
       animation: none;
+      filter: saturate(1.15) brightness(1.02);
     }
   }
 
@@ -322,6 +323,12 @@ All colors MUST be HSL.
 
   .loser-sink {
     animation: voteLoserDrop 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  }
+
+  @media (max-width: 640px) {
+    .loser-sink {
+      animation: none;
+    }
   }
 
   .loser-glow {

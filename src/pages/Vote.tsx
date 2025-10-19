@@ -235,7 +235,7 @@ const Vote = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
       <BackgroundCanvas />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 sm:py-12 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 sm:py-12 sm:px-6 lg:px-8">
         <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-0 pb-7 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
           <p className="text-[11px] font-semibold uppercase tracking-[0.45em] text-amber-500">
             Live Head-to-Head
@@ -403,14 +403,14 @@ const CompanyCard = ({
         "hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-white hover:brightness-105 hover:saturate-110 hover:shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)]",
         isWinner &&
           "winner-glow border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/60 shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)] brightness-110 saturate-110",
-        isLoser && "loser-sink border-slate-200/60 opacity-70 brightness-90 saturate-75"
+        isLoser && "sm:loser-sink border-slate-200/60 opacity-70 brightness-90 saturate-75"
       )}
     >
       <div className={cn(
         "pointer-events-none absolute inset-0",
         isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
       )} />
-      <div className="relative z-10 flex h-full flex-col items-center justify-between gap-0">
+      <div className="relative z-10 flex h-full flex-col justify-between gap-0">
         <div className="flex flex-col gap-1">
           <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] flex items-center justify-center w-full">
             <img
