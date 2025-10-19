@@ -207,9 +207,9 @@ const Leaderboard = () => {
         <LeaderboardBackground />
         <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">SWE Internship Leaderboard</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Company Leaderboard</h1>
             <p className="text-muted-foreground">
-              Rankings based on student votes using chess ELO rating system
+              Rankings based on community votes using the chess ELO rating system
             </p>
           </div>
 

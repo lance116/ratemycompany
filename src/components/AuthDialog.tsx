@@ -175,7 +175,7 @@ export const AuthDialog = () => {
               autoComplete="username"
             />
             <p className="text-xs text-muted-foreground">
-              Letters, numbers, underscores. No slurs allowed.
+              Letters, numbers, underscores only.
             </p>
           </div>
         )}

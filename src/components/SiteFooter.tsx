@@ -33,7 +33,7 @@ const SiteFooter = ({ className }: SiteFooterProps) => {
             &copy; {new Date().getFullYear()} ratemycompany. All rights reserved.
           </p>
           <p className="text-sm">
-            If you want your company featured, feel free to contact me:
+            If you want a company featured or noticed a bug/mistake, feel free to contact me:
           </p>
         </div>
         <div className="flex items-center gap-2.5">

@@ -299,8 +299,8 @@ const Vote = () => {
               onClick={handleDraw}
               disabled={voteMutation.isPending || voteLocked}
               className={cn(
-                "w-full max-w-xs rounded-2xl border border-amber-400/70 bg-amber-400 px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/80",
-                "disabled:pointer-events-none disabled:bg-amber-400 disabled:text-slate-900 disabled:opacity-100 disabled:shadow-[0_12px_28px_-24px_rgba(217,119,6,0.65)]",
+                "w-full max-w-xs rounded-2xl border border-amber-400/70 !bg-amber-300 px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-900 shadow-[0_18px_40px_-28px_rgba(217,119,6,0.75)] transition-all duration-300 hover:-translate-y-0.5 hover:!bg-amber-300 active:!bg-amber-300 focus-visible:!bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/80",
+                "disabled:pointer-events-none disabled:bg-amber-300 disabled:text-slate-900 disabled:opacity-100 disabled:shadow-[0_12px_28px_-24px_rgba(217,119,6,0.65)]",
                 selection === "draw" && "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-white"
               )}
             >
