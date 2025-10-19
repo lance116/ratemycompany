@@ -236,7 +236,7 @@ const Vote = () => {
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
       <BackgroundCanvas />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 sm:py-12 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
+        <section className="rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-0 pb-7 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9">
           <p className="text-[11px] font-semibold uppercase tracking-[0.45em] text-amber-500">
             Live Head-to-Head
           </p>
@@ -317,7 +317,7 @@ const Vote = () => {
 
           <div className="space-y-1.5">
             <p className="text-sm font-semibold text-slate-800">
-              &copy; {new Date().getFullYear()} ratemycompany. All rights reserved.
+              &copy; 2025 Lance Yan. All rights reserved.
             </p>
             <p className="text-sm">
               If you want your company featured, feel free to contact me:
@@ -412,11 +412,11 @@ const CompanyCard = ({
       )} />
       <div className="relative z-10 flex h-full flex-col justify-between gap-0">
         <div className="flex flex-col gap-1">
-          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
+          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)] flex items-center justify-center">
             <img
               src={logoSrc}
               alt={`${company.name} logo`}
-              className="mx-auto h-20 w-full object-contain"
+              className="mx-auto h-20 w-auto object-contain"
             />
           </div>
 
