@@ -43,6 +43,21 @@ create table if not exists public.matchups (
   rating_a_after numeric not null,
   rating_b_after numeric not null,
   submitted_by uuid references auth.users(id),
+  created_at timestamptz not null default now(),
+  ip_address inet
+);
+
+alter table public.matchups
+  alter column ip_address type inet using ip_address::inet,
+  alter column ip_address set default null;
+
+create table if not exists public.draw_violation_logs (
+  id bigserial primary key,
+  ip_address inet,
+  submitter uuid references auth.users(id) on delete set null,
+  company_a uuid references public.companies(id) on delete set null,
+  company_b uuid references public.companies(id) on delete set null,
+  violation_count integer not null default 3,
   created_at timestamptz not null default now()
 );
 
@@ -181,20 +196,64 @@ where username is null;
 alter table public.profiles
   alter column username set not null;
 
-alter table public.profiles
-  add constraint profiles_username_unique unique (username);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_username_unique'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_username_unique unique (username);
+  end if;
+end;
+$$;
 
-alter table public.profiles
-  add constraint profiles_username_profanity_check
-  check (not public.contains_prohibited_language(username));
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_username_profanity_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_username_profanity_check
+      check (not public.contains_prohibited_language(username));
+  end if;
+end;
+$$;
 
-alter table public.reviews
-  add constraint reviews_body_profanity_check
-  check (not public.contains_prohibited_language(body));
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'reviews_body_profanity_check'
+      and conrelid = 'public.reviews'::regclass
+  ) then
+    alter table public.reviews
+      add constraint reviews_body_profanity_check
+      check (not public.contains_prohibited_language(body));
+  end if;
+end;
+$$;
 
-alter table public.reviews
-  add constraint reviews_title_profanity_check
-  check (coalesce(title, '') = '' or not public.contains_prohibited_language(title));
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'reviews_title_profanity_check'
+      and conrelid = 'public.reviews'::regclass
+  ) then
+    alter table public.reviews
+      add constraint reviews_title_profanity_check
+      check (coalesce(title, '') = '' or not public.contains_prohibited_language(title));
+  end if;
+end;
+$$;
 
 -- Views -----------------------------------------------------------------------
 
@@ -286,7 +345,8 @@ create or replace function public.record_matchup(
   company_b uuid,
   result text,
   submitted_by uuid default null,
-  k_factor numeric default 32
+  k_factor numeric default 32,
+  voter_ip inet default null
 ) returns table (
   company_id uuid,
   rating numeric,
@@ -303,6 +363,12 @@ as $$
 declare
   a_rating numeric;
   b_rating numeric;
+  a_slug text;
+  b_slug text;
+  a_name text;
+  b_name text;
+  a_cap numeric;
+  b_cap numeric;
   exp_a numeric;
   exp_b numeric;
   score_a numeric;
@@ -311,6 +377,9 @@ declare
   new_b numeric;
   matchup_id bigint;
   submitter uuid;
+  ip_input inet := voter_ip;
+  draw_streak integer := 0;
+  forwarded_header text;
 begin
   if company_a = company_b then
     raise exception 'company_a and company_b must be different companies';
@@ -321,6 +390,18 @@ begin
   end if;
 
   submitter := coalesce(submitted_by, auth.uid());
+
+  if ip_input is null then
+    begin
+      forwarded_header := nullif(current_setting('request.header.x-forwarded-for', true), '');
+      if forwarded_header is not null then
+        ip_input := split_part(forwarded_header, ',', 1)::inet;
+      end if;
+    exception
+      when others then
+        ip_input := null;
+    end;
+  end if;
 
   if (
     select count(*)
@@ -342,15 +423,49 @@ begin
     values (company_b)
     on conflict on constraint company_elo_pkey do nothing;
 
-  select ce.rating into a_rating
-  from public.company_elo ce
-  where ce.company_id = company_a
-  for update;
+  if result = 'draw' then
+    if ip_input is not null then
+      select count(*) into draw_streak
+      from (
+        select result
+        from public.matchups
+        where ip_address = ip_input
+        order by created_at desc
+        limit 2
+      ) recent
+      where recent.result = 'draw';
+    elsif submitter is not null then
+      select count(*) into draw_streak
+      from (
+        select result
+        from public.matchups
+        where submitted_by = submitter
+        order by created_at desc
+        limit 2
+      ) recent
+      where recent.result = 'draw';
+    end if;
 
-  select ce.rating into b_rating
+    if draw_streak = 2 then
+      insert into public.draw_violation_logs (ip_address, submitter, company_a, company_b, violation_count)
+      values (ip_input, submitter, company_a, company_b, draw_streak + 1);
+      raise exception 'Draw limit reached for this IP. Please choose a winner.';
+    end if;
+  end if;
+
+  select ce.rating, lower(c.slug), lower(c.name)
+  into a_rating, a_slug, a_name
   from public.company_elo ce
+  join public.companies c on c.id = ce.company_id
+  where ce.company_id = company_a
+  for update of ce;
+
+  select ce.rating, lower(c.slug), lower(c.name)
+  into b_rating, b_slug, b_name
+  from public.company_elo ce
+  join public.companies c on c.id = ce.company_id
   where ce.company_id = company_b
-  for update;
+  for update of ce;
 
   exp_a := 1 / (1 + power(10, (b_rating - a_rating) / 400));
   exp_b := 1 / (1 + power(10, (a_rating - b_rating) / 400));
@@ -371,6 +486,33 @@ begin
 
   new_a := least(2200, greatest(800, new_a));
   new_b := least(2200, greatest(800, new_b));
+
+  a_cap := null;
+  b_cap := null;
+
+  if coalesce(a_slug, '') like '%tesla%' or coalesce(a_name, '') like '%tesla%' then
+    a_cap := 1700;
+  elsif coalesce(a_slug, '') like '%tata%' or coalesce(a_name, '') like '%tata%' then
+    a_cap := 1300;
+  elsif coalesce(a_slug, '') like '%walmart%' or coalesce(a_name, '') like '%walmart%' then
+    a_cap := 1300;
+  end if;
+
+  if coalesce(b_slug, '') like '%tesla%' or coalesce(b_name, '') like '%tesla%' then
+    b_cap := 1700;
+  elsif coalesce(b_slug, '') like '%tata%' or coalesce(b_name, '') like '%tata%' then
+    b_cap := 1300;
+  elsif coalesce(b_slug, '') like '%walmart%' or coalesce(b_name, '') like '%walmart%' then
+    b_cap := 1300;
+  end if;
+
+  if a_cap is not null then
+    new_a := least(a_cap, new_a);
+  end if;
+
+  if b_cap is not null then
+    new_b := least(b_cap, new_b);
+  end if;
 
   update public.company_elo as ce
     set rating = new_a,
@@ -398,7 +540,8 @@ begin
     rating_b_before,
     rating_a_after,
     rating_b_after,
-    submitted_by
+    submitted_by,
+    ip_address
   )
   values (
     company_a,
@@ -408,7 +551,8 @@ begin
     b_rating,
     new_a,
     new_b,
-    submitter
+    submitter,
+    ip_input
   )
   returning id into matchup_id;
 
@@ -450,7 +594,33 @@ begin
 end;
 $$;
 
-grant execute on function public.record_matchup(uuid, uuid, text, uuid, numeric) to anon, authenticated;
+-- Enforce Elo caps for specific companies ------------------------------------
+
+do $$
+begin
+  update public.company_elo as ce
+  set rating = least(ce.rating, 1700)
+  from public.companies c
+  where c.id = ce.company_id
+    and (
+      lower(coalesce(c.slug, '')) like '%tesla%'
+      or lower(coalesce(c.name, '')) like '%tesla%'
+    );
+
+  update public.company_elo as ce
+  set rating = least(ce.rating, 1300)
+  from public.companies c
+  where c.id = ce.company_id
+    and (
+      lower(coalesce(c.slug, '')) like '%tata%'
+      or lower(coalesce(c.name, '')) like '%tata%'
+      or lower(coalesce(c.slug, '')) like '%walmart%'
+      or lower(coalesce(c.name, '')) like '%walmart%'
+    );
+end;
+$$;
+
+grant execute on function public.record_matchup(uuid, uuid, text, uuid, numeric, inet) to anon, authenticated;
 
 -- Authentication profile sync -------------------------------------------------
 
