@@ -27,6 +27,7 @@ import {
   Heart,
 } from "lucide-react";
 import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
+import { containsProhibitedSlur } from "@/lib/profanity";
 import { cn } from "@/lib/utils";
 
 const defaultLogo = "https://placehold.co/160x160?text=Logo";
@@ -82,11 +83,19 @@ const CompanyDetails = () => {
         return;
       }
 
+      const body = reviewForm.body.trim();
+      const program = reviewForm.program.trim();
+      const cohort = reviewForm.cohort.trim();
+
+      if (containsProhibitedSlur(body) || containsProhibitedSlur(program) || containsProhibitedSlur(cohort)) {
+        throw new Error("Please remove prohibited language from your review.");
+      }
+
       const payload = {
         rating: reviewForm.rating,
-        body: reviewForm.body,
-        program: reviewForm.program || null,
-        cohort: reviewForm.cohort || null,
+        body,
+        program: program || null,
+        cohort: cohort || null,
         pay: reviewForm.pay ? Number(reviewForm.pay) : null,
         culture: reviewForm.culture,
         prestige: reviewForm.prestige,

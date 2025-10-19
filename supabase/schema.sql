@@ -99,6 +99,104 @@ create table if not exists public.review_reactions (
   primary key (review_id, user_id)
 );
 
+alter table public.profiles
+  add column if not exists username text;
+
+create or replace function public.contains_prohibited_language(input text)
+returns boolean
+language plpgsql
+immutable
+as $$
+declare
+  sanitized text;
+  term text;
+  blacklist text[] := array[
+    'nigger',
+    'nigga',
+    'faggot',
+    'kike',
+    'chink',
+    'spic',
+    'wetback',
+    'gook',
+    'coon',
+    'paki',
+    'raghead',
+    'porchmonkey',
+    'zipperhead',
+    'sandnigger'
+  ];
+begin
+  if input is null then
+    return false;
+  end if;
+  sanitized := lower(input);
+  sanitized := regexp_replace(sanitized, '[^a-z0-9]+', ' ', 'g');
+
+  foreach term in array blacklist loop
+    if position(term in sanitized) > 0 then
+      return true;
+    end if;
+  end loop;
+  return false;
+end;
+$$;
+
+create or replace function public.generate_username(base text)
+returns text
+language plpgsql
+as $$
+declare
+  normalized text := lower(coalesce(base, ''));
+  candidate text;
+  suffix integer := 0;
+begin
+  normalized := regexp_replace(normalized, '[^a-z0-9]+', '_', 'g');
+  normalized := trim(both '_' from normalized);
+  if normalized = '' then
+    normalized := 'user';
+  end if;
+
+  loop
+    candidate := normalized || case when suffix = 0 then '' else '_' || suffix::text end;
+    if length(candidate) < 3 then
+      candidate := candidate || repeat('0', 3 - length(candidate));
+    end if;
+    candidate := trim(both '_' from candidate);
+    if candidate = '' then
+      candidate := 'user';
+    end if;
+    if not public.contains_prohibited_language(candidate)
+       and not exists (select 1 from public.profiles where username = candidate) then
+      return candidate;
+    end if;
+    suffix := suffix + 1;
+  end loop;
+end;
+$$;
+
+update public.profiles
+set username = public.generate_username(coalesce(display_name, 'user'))
+where username is null;
+
+alter table public.profiles
+  alter column username set not null;
+
+alter table public.profiles
+  add constraint profiles_username_unique unique (username);
+
+alter table public.profiles
+  add constraint profiles_username_profanity_check
+  check (not public.contains_prohibited_language(username));
+
+alter table public.reviews
+  add constraint reviews_body_profanity_check
+  check (not public.contains_prohibited_language(body));
+
+alter table public.reviews
+  add constraint reviews_title_profanity_check
+  check (coalesce(title, '') = '' or not public.contains_prohibited_language(title));
+
 -- Views -----------------------------------------------------------------------
 
 create or replace view public.company_leaderboard as
@@ -349,16 +447,33 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  base_username text := coalesce(
+    new.raw_user_meta_data->>'username',
+    new.raw_user_meta_data->>'full_name',
+    split_part(new.email, '@', 1)
+  );
+  safe_username text;
+  safe_display text;
 begin
-  insert into public.profiles (id, display_name, avatar_url)
+  safe_username := public.generate_username(base_username);
+  safe_display := coalesce(
+    new.raw_user_meta_data->>'display_name',
+    initcap(replace(safe_username, '_', ' '))
+  );
+
+  insert into public.profiles (id, display_name, username, avatar_url)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    safe_display,
+    safe_username,
     new.raw_user_meta_data->>'avatar_url'
   )
   on conflict (id) do update
     set display_name = excluded.display_name,
+        username = excluded.username,
         avatar_url = excluded.avatar_url;
+
   return new;
 end;
 $$;

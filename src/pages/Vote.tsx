@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PayStats } from "@/components/ui/pay-stats";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Hash, Sparkles, Star, Trophy } from "lucide-react";
+import { Hash, Sparkles, Trophy } from "lucide-react";
 import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
 
 type CompanyPair = [LeaderboardCompany, LeaderboardCompany];
@@ -331,7 +331,7 @@ const Vote = () => {
             </div>
             <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 shadow-sm transition group-hover:bg-muted/80">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <Star className="h-4 w-4 text-primary" />
+                <Hash className="h-4 w-4 text-primary" />
               </div>
               <span className="text-xs uppercase tracking-wide text-muted-foreground">Rank</span>
               <span className="text-base font-semibold text-foreground">

@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
+import { containsProhibitedSlur, sanitizeUsernameInput } from "@/lib/profanity";
 import { Loader2, LogIn, LogOut } from "lucide-react";
 
 const initialForm = {
   email: "",
   password: "",
+  username: "",
 };
 
 export const AuthDialog = () => {
@@ -52,7 +54,14 @@ export const AuthDialog = () => {
         setSuccess("Signed in successfully");
         closeDialog();
       } else {
-        await signUpWithPassword(form.email, form.password);
+        const username = sanitizeUsernameInput(form.username);
+        if (username.length < 3) {
+          throw new Error("Username must be at least 3 characters long.");
+        }
+        if (containsProhibitedSlur(username)) {
+          throw new Error("Please choose a different username.");
+        }
+        await signUpWithPassword(form.email, form.password, username);
         setSuccess("Check your inbox to confirm your email.");
       }
     } catch (err) {
@@ -86,10 +95,11 @@ export const AuthDialog = () => {
   }
 
   if (user) {
+    const username = (user.user_metadata as Record<string, unknown> | undefined)?.username;
     return (
       <div className="flex items-center space-x-3">
         <span className="text-sm text-muted-foreground hidden sm:inline">
-          {user.email || "Signed in"}
+          {username || user.email || "Signed in"}
         </span>
         <Button
           variant="outline"
@@ -125,23 +135,43 @@ export const AuthDialog = () => {
         </DialogHeader>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
               value={form.email}
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
               required
-              autoComplete="email"
-            />
-          </div>
+            autoComplete="email"
+          />
+        </div>
 
+        {mode === "signup" && (
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="username">Username</Label>
             <Input
-              id="password"
-              type="password"
+              id="username"
+              type="text"
+              value={form.username}
+              onChange={(event) => setForm(prev => ({ ...prev, username: event.target.value }))}
+              required
+              minLength={3}
+              maxLength={30}
+              placeholder="your_username"
+              autoComplete="username"
+            />
+            <p className="text-xs text-muted-foreground">
+              Letters, numbers, underscores. No slurs allowed.
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
               value={form.password}
               onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
               required
