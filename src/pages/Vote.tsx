@@ -375,11 +375,17 @@ const CompanyCard = ({
   onSelect,
 }: CardProps) => {
   const logoSrc = company.logoUrl ?? "/placeholder.svg";
+  const [wasTouched, setWasTouched] = useState(false);
+
+  const handleClick = () => {
+    setWasTouched(true);
+    onSelect();
+  };
 
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={handleClick}
       disabled={disabled}
       className={cn(
       "vote-card relative flex min-h-[20rem] flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7",
@@ -387,6 +393,7 @@ const CompanyCard = ({
       "disabled:cursor-not-allowed disabled:opacity-80",
       !isWinner &&
         !isLoser &&
+        !wasTouched &&
         "hover:-translate-y-0.5 hover:border-amber-300/70 hover:bg-white hover:brightness-105 hover:saturate-110 hover:shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)]",
         isWinner &&
           "winner-glow border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-amber-100/60 shadow-[0_36px_72px_-40px_rgba(217,119,6,0.35)] brightness-110 saturate-110",
