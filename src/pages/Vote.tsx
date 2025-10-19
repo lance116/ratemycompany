@@ -404,22 +404,22 @@ const CompanyCard = ({
         "pointer-events-none absolute inset-0",
         isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
       )} />
-      <div className="relative z-10 flex h-full flex-col gap-6">
-        <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
-          <img
-            src={logoSrc}
-            alt={`${company.name} logo`}
-            className="mx-auto h-20 w-full object-contain"
-          />
-        </div>
+      <div className="relative z-10 flex h-full flex-col justify-between gap-0">
+        <div className="flex flex-col gap-1">
+          <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-6 py-12 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
+            <img
+              src={logoSrc}
+              alt={`${company.name} logo`}
+              className="mx-auto h-20 w-full object-contain"
+            />
+          </div>
 
-        <div className="space-y-4">
-          <div className="space-y-3">
+          <div className="space-y-1">
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl h-16 flex items-center justify-center">
               {company.name}
             </h2>
 
-            <div className="h-12 flex items-center">
+            <div className="h-12 flex items-center justify-center">
               <div className="flex flex-wrap items-baseline gap-2">
                 <AnimatedStat
                   label="Elo"
@@ -436,20 +436,20 @@ const CompanyCard = ({
               </div>
             </div>
           </div>
-
-          {company.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 min-h-6">
-              {company.tags.map((trait) => (
-                <span
-                  key={trait}
-                  className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-[0.3em] text-slate-600"
-                >
-                  {trait}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
+
+        {company.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 min-h-6 mt-auto">
+            {company.tags.map((trait) => (
+              <span
+                key={trait}
+                className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[7px] font-semibold uppercase tracking-[0.3em] text-slate-600"
+              >
+                {trait}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </button>
   );
