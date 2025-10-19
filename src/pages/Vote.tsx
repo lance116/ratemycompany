@@ -293,6 +293,29 @@ const Vote = () => {
     });
   };
 
+  const handleSkip = async () => {
+    if (voteMutation.isPending || voteLocked) {
+      return;
+    }
+
+    setVoteLocked(true);
+    setSelection(null);
+    setStatDeltas({});
+    setStatTriggers({});
+    setMutationError(null);
+
+    if (resetTimerRef.current) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+
+    try {
+      await refetch({ throwOnError: false });
+    } finally {
+      setVoteLocked(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
       <BackgroundCanvas />
@@ -402,8 +425,8 @@ const Vote = () => {
 
           <div
             className={cn(
-              "mt-3 sm:mt-2 flex justify-center",
-              layout.isCompact && "mt-4"
+              "mt-3 sm:mt-2 flex items-center justify-center gap-3",
+              layout.isCompact && "mt-4 flex-col"
             )}
           >
             <Button
@@ -418,6 +441,18 @@ const Vote = () => {
               )}
             >
               Draw/Tie
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSkip}
+              disabled={voteMutation.isPending || voteLocked}
+              className={cn(
+                "w-full max-w-xs rounded-2xl border border-slate-200/80 bg-white px-6 py-3 text-[0.8rem] font-semibold uppercase tracking-[0.42em] text-slate-700 shadow-[0_18px_40px_-30px_rgba(15,23,42,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/80",
+                "disabled:pointer-events-none disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:opacity-100 disabled:shadow-none",
+                layout.isCompact && "max-w-sm px-5 py-2.5 text-[0.72rem] tracking-[0.36em]"
+              )}
+            >
+              I don&apos;t know
             </Button>
           </div>
         </section>
