@@ -423,11 +423,11 @@ const CompanyCard = ({
           </div>
 
           <div className="flex w-full flex-col items-start gap-2 sm:items-center">
-            <h2 className="flex min-h-[3.25rem] items-center text-2xl font-semibold tracking-tight text-slate-900 sm:justify-center sm:text-3xl">
+            <h2 className="flex min-h-[4rem] items-center text-2xl font-semibold tracking-tight text-slate-900 leading-tight sm:justify-center sm:text-3xl">
               {company.name}
             </h2>
 
-            <div className="flex min-h-[2.5rem] items-center justify-start sm:justify-center">
+            <div className="flex min-h-[3rem] items-center justify-start sm:justify-center">
               <div className="flex flex-wrap items-baseline gap-2">
                 <AnimatedStat
                   label="Elo"
