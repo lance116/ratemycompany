@@ -162,13 +162,16 @@ export const fetchCompanyEloHistory = async (companyId: string): Promise<EloHist
     .from("elo_history")
     .select("rating, rank, created_at")
     .eq("company_id", companyId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(40);
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data ?? []).map((row) => ({
+  const rows = data ? [...data].reverse() : [];
+
+  return rows.map((row) => ({
     createdAt: row.created_at,
     rating: Math.round(Number(row.rating ?? 0)),
     rank: row.rank ?? null,
