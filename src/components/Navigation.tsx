@@ -17,7 +17,7 @@ const Navigation = () => {
     <>
       {/* Mobile Top Navigation Bar */}
       <div className="sm:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-50" style={{ width: '100vw' }}>
-        <div className="flex items-center justify-center h-16 px-4 gap-4">
+        <div className="flex items-center justify-center h-16 w-full gap-0">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -25,7 +25,7 @@ const Navigation = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-1 px-3 py-2 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${
+                className={`flex flex-1 items-center justify-center gap-1 py-2 rounded-md text-xs font-medium transition-colors ${
                   isActive
                     ? "text-primary bg-primary/10"
                     : "text-muted-foreground"
@@ -36,7 +36,7 @@ const Navigation = () => {
               </Link>
             );
           })}
-          <div className="flex-shrink-0 ml-auto">
+          <div className="flex-shrink-0">
             <AuthDialog />
           </div>
         </div>
