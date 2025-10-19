@@ -85,7 +85,7 @@ const Leaderboard = () => {
         <div className="flex h-full flex-col justify-end">
           <Card
             className={cn(
-              "flex flex-col border-2 bg-card/90 backdrop-blur transition-all duration-300 hover:shadow-xl",
+              "relative flex flex-col border-2 bg-card/90 backdrop-blur transition-all duration-300 hover:shadow-xl",
               podiumRank === 1 && "border-gold shadow-gold/40",
               podiumRank === 2 && "border-silver shadow-silver/40",
               podiumRank === 3 && "border-bronze shadow-bronze/40",
@@ -93,6 +93,26 @@ const Leaderboard = () => {
               cardHeightClass
             )}
           >
+            {podiumRank === 1 && (
+              <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+                <div className="absolute inset-0 opacity-60">
+                  <div className="absolute -top-1/2 left-1/3 h-64 w-64 rotate-12 rounded-full bg-gradient-to-br from-gold/40 via-gold/10 to-transparent blur-lg" />
+                  <div className="absolute bottom-[-30%] right-[-20%] h-56 w-56 rounded-full bg-gradient-to-tr from-gold/25 via-gold/5 to-transparent blur-3xl" />
+                </div>
+                <div className="absolute inset-0">
+                  <svg className="h-full w-full opacity-40" viewBox="0 0 400 400" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
+                        <stop offset="40%" stopColor="rgba(255,255,255,0.08)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                      </linearGradient>
+                    </defs>
+                    <rect x="-50" y="-50" width="500" height="500" fill="url(#shine)" transform="rotate(20 200 200)" />
+                  </svg>
+                </div>
+              </div>
+            )}
             <CardContent className="flex flex-1 flex-col items-center justify-between p-6 text-center">
               <div className="mb-4">
                 {podiumRank ? (

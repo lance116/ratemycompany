@@ -281,8 +281,8 @@ const Vote = () => {
       <Card
         key={company.id}
         className={cn(
-          "group relative w-full cursor-pointer overflow-hidden border border-border/40 bg-card/90 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:border-primary/40 hover:shadow-2xl",
-          winnerHighlight === company.id && "md:-translate-y-4 md:shadow-primary/30 border-primary/50"
+          "group relative w-full cursor-pointer overflow-hidden border border-border bg-card text-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-foreground/30 hover:shadow-lg",
+          winnerHighlight === company.id && "md:-translate-y-3 border-primary shadow-lg"
         )}
         onClick={() => handleVote(company)}
       >
@@ -290,30 +290,28 @@ const Vote = () => {
           <div className="relative w-full">
             <div
               className={cn(
-                "mx-auto h-44 w-full max-w-xs overflow-hidden rounded-2xl bg-muted/40 shadow-inner transition duration-500",
-                winnerHighlight === company.id
-                  ? "bg-muted/25 shadow-primary/40"
-                  : "group-hover:bg-muted/20 group-hover:shadow-primary/30"
+                "mx-auto flex h-36 w-full max-w-xs items-center justify-center overflow-hidden rounded-2xl bg-secondary shadow-inner transition duration-300",
+                winnerHighlight === company.id ? "bg-secondary/60" : "group-hover:bg-secondary/80"
               )}
             >
               <img
                 src={logo}
                 alt={company.name}
-                className="h-full w-full object-contain object-center transition-transform duration-500 ease-out group-hover:scale-105"
+                className="h-28 w-28 object-contain transition-transform duration-300 group-hover:scale-105"
               />
             </div>
           </div>
-          <h3 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
+          <h3 className="text-xl font-bold tracking-tight md:text-2xl">
             {company.name}
           </h3>
-          <div className="flex items-center justify-center space-x-4 text-sm font-medium text-muted-foreground">
-            <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 shadow-sm transition group-hover:bg-muted/80">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <Trophy className="h-4 w-4 text-primary" />
+          <div className="flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-muted-foreground">
+            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 shadow-inner transition group-hover:bg-secondary/80">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <Trophy className="h-4 w-4" />
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">Elo</span>
-                <span className="text-base font-semibold text-foreground">
+                <span className="text-xs uppercase tracking-[0.25em]">Elo</span>
+                <span className="text-base font-semibold">
                   {currentRating}
                 </span>
                 {ratingDiff !== 0 && (
@@ -329,17 +327,24 @@ const Vote = () => {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 shadow-sm transition group-hover:bg-muted/80">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <Hash className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 shadow-inner transition group-hover:bg-secondary/80">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <Hash className="h-4 w-4" />
               </div>
-              <span className="text-xs uppercase tracking-wide text-muted-foreground">Rank</span>
-              <span className="text-base font-semibold text-foreground">
+              <span className="text-xs uppercase tracking-[0.25em]">Rank</span>
+              <span className="text-base font-semibold">
                 #{company.rank}
               </span>
             </div>
           </div>
-          <div className="mt-2 w-full">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.25em] text-muted-foreground/80">
+            {company.tags.slice(0, 4).map(tag => (
+              <span key={tag} className="rounded-full border border-border bg-secondary px-2 py-1 uppercase">
+                {tag.toUpperCase()}
+              </span>
+            ))}
+          </div>
+          <div className="mt-4 w-full">
             <PayStats pay={company.payDisplay} className="justify-center text-sm" />
           </div>
         </CardContent>
@@ -348,30 +353,30 @@ const Vote = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <Badge variant="outline" className="mb-3 px-3 py-1 text-xs uppercase tracking-[0.2em]">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-8 md:py-12 space-y-10">
+        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <Badge variant="outline" className="mb-4 px-4 py-1 text-xs uppercase tracking-[0.35em]">
             Live Head-to-Head
           </Badge>
-          <h1 className="text-4xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl font-bold md:text-4xl">
             Which SWE internship would you prefer?
           </h1>
-          <p className="text-muted-foreground mb-4">
-            Help build the ultimate internship ranking using ELO rating system
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground/90">
+            Cast your vote and watch the Elo rankings update live. Upsets make the leaderboard swing!
           </p>
-          <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+          <div className="mt-6 flex items-center justify-center space-x-2 text-sm text-muted-foreground">
             <Trophy size={16} />
-            <span>{votes} votes cast</span>
+            <span className="tabular-nums">{votes} votes recorded</span>
           </div>
         </div>
 
-        <div className="flex flex-col items-center space-y-6">
-          <div className="flex w-full max-w-5xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-1 flex-col items-center space-y-8">
+          <div className="flex w-full flex-1 flex-col gap-6 md:flex-row md:items-stretch md:justify-between">
             {renderCompanyCard(leftCompany)}
 
             <div className="flex h-full items-center justify-center">
-              <div className="rounded-full border border-border bg-background/70 px-6 py-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
+              <div className="rounded-full border border-border bg-card px-6 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground shadow-sm">
                 VS
               </div>
             </div>
@@ -380,12 +385,14 @@ const Vote = () => {
           </div>
 
           <Button
-            variant="secondary"
+            variant="default"
+            size="lg"
+            className="w-full max-w-sm gap-3 rounded-full bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90"
             onClick={handleDontKnow}
             disabled={isVoting}
-            >
-            <Sparkles className="mr-2 h-4 w-4" />
-            I&apos;m not sure
+          >
+            <Sparkles className="h-5 w-5" />
+            <span className="text-base font-semibold uppercase tracking-[0.25em]">I&apos;m not sure</span>
           </Button>
         </div>
       </div>
