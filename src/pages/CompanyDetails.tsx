@@ -219,9 +219,9 @@ const CompanyDetails = () => {
           <Star
             key={star}
             className={cn(
-              "h-5 w-5",
-              star <= rating ? "fill-primary text-primary" : "text-muted-foreground",
-              interactive && "cursor-pointer hover:text-primary"
+              "h-5 w-5 transition-colors",
+              star <= rating ? "fill-gold text-gold" : "text-gold/30",
+              interactive && "cursor-pointer hover:text-gold hover:fill-gold"
             )}
             onClick={interactive && onChange ? () => onChange(star) : undefined}
           />

@@ -33,12 +33,24 @@ const Vote = () => {
   const [votes, setVotes] = useState(0);
   const [completedMatchups, setCompletedMatchups] = useState<Set<string>>(new Set());
   const [displayedRatings, setDisplayedRatings] = useState<Record<string, number>>({});
+  const [displayedRanks, setDisplayedRanks] = useState<Record<string, number>>({});
   const [eloDiffs, setEloDiffs] = useState<Record<string, number>>({});
+  const [rankDiffs, setRankDiffs] = useState<Record<string, number>>({});
   const animationRef = useRef<number | null>(null);
-  const interactionGateRef = useRef<{ animationDone: boolean; rpcDone: boolean }>({
+  const rankAnimationRef = useRef<number | null>(null);
+  const finalizeTimeoutRef = useRef<number | null>(null);
+  const interactionGateRef = useRef<{
+    animationDone: boolean;
+    rpcDone: boolean;
+    rankAnimationDone: boolean;
+    releaseScheduled: boolean;
+  }>({
     animationDone: false,
     rpcDone: false,
+    rankAnimationDone: true,
+    releaseScheduled: false,
   });
+  const nextPairRef = useRef<CompanyPair | null>(null);
   const [winnerHighlight, setWinnerHighlight] = useState<string | null>(null);
 
   useEffect(() => {
@@ -65,12 +77,24 @@ const Vote = () => {
       [right.id]: right.elo,
     });
     setEloDiffs({});
+    setDisplayedRanks(prev => ({
+      ...prev,
+      [left.id]: prev[left.id] ?? left.rank,
+      [right.id]: prev[right.id] ?? right.rank,
+    }));
+    setRankDiffs({});
   }, [currentPair]);
 
   useEffect(() => {
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (rankAnimationRef.current) {
+        cancelAnimationFrame(rankAnimationRef.current);
+      }
+      if (finalizeTimeoutRef.current) {
+        clearTimeout(finalizeTimeoutRef.current);
       }
     };
   }, []);
@@ -142,6 +166,45 @@ const Vote = () => {
     animationRef.current = requestAnimationFrame(step);
   };
 
+  const animateRankChange = ({
+    updates,
+    onComplete,
+  }: {
+    updates: Array<{ id: string; start: number; target: number }>;
+    onComplete?: () => void;
+  }) => {
+    if (updates.length === 0) {
+      onComplete?.();
+      return;
+    }
+
+    const duration = 900;
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      setDisplayedRanks(prev => {
+        const next = { ...prev };
+        updates.forEach(({ id, start, target }) => {
+          next[id] = Math.round(start + (target - start) * progress);
+        });
+        return next;
+      });
+
+      if (progress < 1) {
+        rankAnimationRef.current = requestAnimationFrame(step);
+      } else {
+        rankAnimationRef.current = null;
+        onComplete?.();
+      }
+    };
+
+    if (rankAnimationRef.current) {
+      cancelAnimationFrame(rankAnimationRef.current);
+    }
+    rankAnimationRef.current = requestAnimationFrame(step);
+  };
+
   const handleDontKnow = () => {
     if (!currentPair) {
       return;
@@ -149,6 +212,7 @@ const Vote = () => {
 
     const newPair = getRandomPair(companyPool, [], completedMatchups);
     setEloDiffs({});
+    setRankDiffs({});
     setWinnerHighlight(null);
     setCurrentPair(newPair);
   };
@@ -160,13 +224,37 @@ const Vote = () => {
 
     setIsVoting(true);
     setVotes(prev => prev + 1);
-    interactionGateRef.current = { animationDone: false, rpcDone: false };
+    interactionGateRef.current = {
+      animationDone: false,
+      rpcDone: false,
+      rankAnimationDone: true,
+      releaseScheduled: false,
+    };
     setWinnerHighlight(winner.id);
 
     const releaseGate = () => {
       const gate = interactionGateRef.current;
-      if (gate.animationDone && gate.rpcDone) {
-        setIsVoting(false);
+      if (gate.releaseScheduled) {
+        return;
+      }
+      if (gate.animationDone && gate.rpcDone && gate.rankAnimationDone) {
+        gate.releaseScheduled = true;
+        const finalize = () => {
+          finalizeTimeoutRef.current = null;
+          setIsVoting(false);
+          const pendingPair = nextPairRef.current;
+          nextPairRef.current = null;
+          setWinnerHighlight(null);
+          setEloDiffs({});
+          setRankDiffs({});
+          if (pendingPair) {
+            setCurrentPair(pendingPair);
+          }
+        };
+        if (finalizeTimeoutRef.current) {
+          clearTimeout(finalizeTimeoutRef.current);
+        }
+        finalizeTimeoutRef.current = window.setTimeout(finalize, 160);
       }
     };
 
@@ -176,13 +264,14 @@ const Vote = () => {
     const matchupKey = createMatchupKey(winner, loser);
     const { winnerNewRating, loserNewRating } = calculateEloChange(winner.elo, loser.elo);
     const optimisticCompanies = companyPool.map(company => {
+      const currentRank = displayedRanks[company.id] ?? company.rank;
       if (company.id === winner.id) {
-        return { ...company, elo: winnerNewRating };
+        return { ...company, elo: winnerNewRating, rank: currentRank };
       }
       if (company.id === loser.id) {
-        return { ...company, elo: loserNewRating };
+        return { ...company, elo: loserNewRating, rank: currentRank };
       }
-      return company;
+      return { ...company, rank: currentRank };
     });
 
     queryClient.setQueryData(["leaderboard"], optimisticCompanies);
@@ -199,6 +288,7 @@ const Vote = () => {
     setCompletedMatchups(newCompletedMatchups);
 
     const nextPair = getRandomPair(optimisticCompanies, [], newCompletedMatchups);
+    nextPairRef.current = nextPair;
 
     animateEloChange({
       winnerId: winner.id,
@@ -213,11 +303,6 @@ const Vote = () => {
           animationDone: true,
         };
         releaseGate();
-        setTimeout(() => {
-          setEloDiffs({});
-          setCurrentPair(nextPair);
-          setWinnerHighlight(null);
-        }, 80);
       },
     });
 
@@ -231,18 +316,34 @@ const Vote = () => {
       });
 
       if (Array.isArray(updatedRows) && updatedRows.length > 0) {
+        const rankUpdates: Array<{ id: string; start: number; target: number }> = [];
+        const rankDiffAccumulator: Record<string, number> = {};
+
         queryClient.setQueryData<LeaderboardCompany[]>(["leaderboard"], previous => {
           if (!previous) {
             return previous;
           }
-          const updateMap = new Map(
-            updatedRows.map(row => [row.company_id, row])
-          );
+          const updateMap = new Map(updatedRows.map(row => [row.company_id, row]));
+
           return previous.map(company => {
             const update = updateMap.get(company.id);
             if (!update) {
               return company;
             }
+
+            if (company.id === winner.id || company.id === loser.id) {
+              const startRank = (displayedRanks[company.id] ?? company.rank) ?? update.rank;
+              const targetRank = update.rank;
+              if (startRank !== targetRank) {
+                rankUpdates.push({
+                  id: company.id,
+                  start: startRank,
+                  target: targetRank,
+                });
+                rankDiffAccumulator[company.id] = targetRank - startRank;
+              }
+            }
+
             return {
               ...company,
               elo: Math.round(Number(update.rating)),
@@ -254,6 +355,37 @@ const Vote = () => {
             };
           });
         });
+
+        if (rankUpdates.length > 0) {
+          setRankDiffs(prev => ({ ...prev, ...rankDiffAccumulator }));
+          interactionGateRef.current = {
+            ...interactionGateRef.current,
+            rankAnimationDone: false,
+          };
+          animateRankChange({
+            updates: rankUpdates,
+            onComplete: () => {
+              setDisplayedRanks(prev => {
+                const next = { ...prev };
+                rankUpdates.forEach(({ id, target }) => {
+                  next[id] = target;
+                });
+                return next;
+              });
+              interactionGateRef.current = {
+                ...interactionGateRef.current,
+                rankAnimationDone: true,
+              };
+              releaseGate();
+            },
+          });
+        } else {
+          interactionGateRef.current = {
+            ...interactionGateRef.current,
+            rankAnimationDone: true,
+          };
+          releaseGate();
+        }
       }
     } catch (error) {
       console.error("Failed to record matchup", error);
@@ -277,6 +409,8 @@ const Vote = () => {
     const logo = company.logoUrl ?? defaultLogo;
     const currentRating = displayedRatings[company.id] ?? company.elo;
     const ratingDiff = eloDiffs[company.id] ?? 0;
+    const currentRank = displayedRanks[company.id] ?? company.rank;
+    const rankDiff = rankDiffs[company.id] ?? 0;
     return (
       <Card
         key={company.id}
@@ -331,10 +465,21 @@ const Vote = () => {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                 <Hash className="h-4 w-4" />
               </div>
-              <span className="text-xs uppercase tracking-[0.25em]">Rank</span>
-              <span className="text-base font-semibold">
-                #{company.rank}
-              </span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xs uppercase tracking-[0.25em]">Rank</span>
+                <span className="text-base font-semibold">{currentRank}</span>
+                {rankDiff !== 0 && (
+                  <span
+                    className={cn(
+                      "text-xs font-semibold transition-colors duration-500",
+                      rankDiff < 0 ? "text-emerald-500" : "text-rose-500"
+                    )}
+                  >
+                    {rankDiff > 0 ? "+" : ""}
+                    {rankDiff}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold tracking-[0.25em] text-muted-foreground/80">
@@ -354,8 +499,8 @@ const Vote = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 py-8 md:py-12 space-y-10">
-        <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4 pt-4 pb-8 md:pt-6 md:pb-10 space-y-6">
+        <div className="rounded-2xl border border-border bg-card px-6 py-6 md:px-8 md:py-7 text-center shadow-sm">
           <Badge variant="outline" className="mb-4 px-4 py-1 text-xs uppercase tracking-[0.35em]">
             Live Head-to-Head
           </Badge>
@@ -371,8 +516,8 @@ const Vote = () => {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col items-center space-y-8">
-          <div className="flex w-full flex-1 flex-col gap-6 md:flex-row md:items-stretch md:justify-between">
+        <div className="flex flex-1 flex-col items-center space-y-5 pb-6">
+          <div className="flex w-full flex-1 flex-col gap-4 md:flex-row md:items-stretch md:justify-between">
             {renderCompanyCard(leftCompany)}
 
             <div className="flex h-full items-center justify-center">
@@ -384,16 +529,18 @@ const Vote = () => {
             {renderCompanyCard(rightCompany)}
           </div>
 
-          <Button
-            variant="default"
-            size="lg"
-            className="w-full max-w-sm gap-3 rounded-full bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90"
-            onClick={handleDontKnow}
-            disabled={isVoting}
-          >
-            <Sparkles className="h-5 w-5" />
-            <span className="text-base font-semibold uppercase tracking-[0.25em]">I&apos;m not sure</span>
-          </Button>
+          <div className="w-full max-w-md">
+            <Button
+              variant="default"
+              size="lg"
+              className="w-full gap-3 rounded-full bg-primary text-primary-foreground shadow-sm transition hover:bg-primary/90"
+              onClick={handleDontKnow}
+              disabled={isVoting}
+            >
+              <Sparkles className="h-5 w-5" />
+              <span className="text-base font-semibold uppercase tracking-[0.25em]">I&apos;m not sure</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

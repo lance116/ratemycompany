@@ -9,7 +9,6 @@ create table if not exists public.companies (
   name text not null unique,
   slug text not null unique,
   description text,
-  website text,
   logo_url text,
   created_at timestamptz not null default now()
 );
@@ -205,7 +204,6 @@ select
   c.name,
   c.slug,
   c.description,
-  c.website,
   c.logo_url,
   c.tags,
   ce.rating,
@@ -359,21 +357,21 @@ begin
   new_a := a_rating + k_factor * (score_a - exp_a);
   new_b := b_rating + k_factor * (score_b - exp_b);
 
-  update public.company_elo ce
+  update public.company_elo as ce
     set rating = new_a,
-        matches_played = matches_played + 1,
-        wins = wins + case when result = 'a' then 1 else 0 end,
-        losses = losses + case when result = 'b' then 1 else 0 end,
-        draws = draws + case when result = 'draw' then 1 else 0 end,
+        matches_played = ce.matches_played + 1,
+        wins = ce.wins + case when result = 'a' then 1 else 0 end,
+        losses = ce.losses + case when result = 'b' then 1 else 0 end,
+        draws = ce.draws + case when result = 'draw' then 1 else 0 end,
         updated_at = now()
     where ce.company_id = company_a;
 
-  update public.company_elo ce
+  update public.company_elo as ce
     set rating = new_b,
-        matches_played = matches_played + 1,
-        wins = wins + case when result = 'b' then 1 else 0 end,
-        losses = losses + case when result = 'a' then 1 else 0 end,
-        draws = draws + case when result = 'draw' then 1 else 0 end,
+        matches_played = ce.matches_played + 1,
+        wins = ce.wins + case when result = 'b' then 1 else 0 end,
+        losses = ce.losses + case when result = 'a' then 1 else 0 end,
+        draws = ce.draws + case when result = 'draw' then 1 else 0 end,
         updated_at = now()
     where ce.company_id = company_b;
 

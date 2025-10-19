@@ -15,7 +15,6 @@ export interface LeaderboardCompany {
   description: string | null;
   tags: string[];
   logoUrl: string | null;
-  website: string | null;
   elo: number;
   rank: number;
   matchesPlayed: number;
@@ -86,7 +85,6 @@ const mapLeaderboardRow = (row: any): LeaderboardCompany => {
     description: row.description ?? null,
     tags: row.tags ?? [],
     logoUrl: row.logo_url ?? null,
-    website: row.website ?? null,
     elo: Math.round(Number(row.rating ?? 0)),
     rank: row.rank ?? 0,
     matchesPlayed: row.matches_played ?? 0,
