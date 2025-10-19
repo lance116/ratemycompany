@@ -218,15 +218,15 @@ const Leaderboard = () => {
           </div>
 
           <div className="mb-12">
-            <div className="flex flex-col md:grid md:grid-cols-3 md:gap-2 md:items-end md:justify-center space-y-2 md:space-y-0">
+            <div className="grid grid-cols-3 gap-2 md:flex md:items-end md:justify-center md:space-x-6">
               {[
                 {
                   company: podium[1],
                   rank: 2,
                   options: {
                     podiumRank: 2,
-                    wrapperClass: "w-full md:col-span-1 md:order-1",
-                    cardHeightClass: "md:min-h-[360px]",
+                    wrapperClass: "col-span-1 md:order-1",
+                    cardHeightClass: "min-h-[300px] md:min-h-[360px]",
                     logoBoxClass: "h-16 w-16 md:h-24 md:w-24",
                   },
                 },
@@ -235,7 +235,7 @@ const Leaderboard = () => {
                   rank: 1,
                   options: {
                     podiumRank: 1,
-                    wrapperClass: "w-full md:col-span-1 md:order-2",
+                    wrapperClass: "col-span-1 md:order-2",
                     cardHeightClass: "min-h-[340px] md:min-h-[420px]",
                     logoBoxClass: "h-16 w-16 md:h-28 md:w-28",
                   },
@@ -245,8 +245,8 @@ const Leaderboard = () => {
                   rank: 3,
                   options: {
                     podiumRank: 3,
-                    wrapperClass: "w-full md:col-span-1 md:order-3",
-                    cardHeightClass: "md:min-h-[340px]",
+                    wrapperClass: "col-span-1 md:order-3",
+                    cardHeightClass: "min-h-[260px] md:min-h-[340px]",
                     logoBoxClass: "h-16 w-16 md:h-20 md:w-20",
                   },
                 },
