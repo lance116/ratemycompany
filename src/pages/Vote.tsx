@@ -445,7 +445,7 @@ const CompanyCard = ({
         </div>
 
         {company.tags.length > 0 && (
-          <div className="hidden sm:flex flex-wrap gap-2 min-h-8 mt-auto justify-center">
+          <div className="hidden sm:flex flex-wrap gap-2 min-h-8 mt-auto justify-center items-center w-full">
             {company.tags.map((trait) => (
               <span
                 key={trait}
