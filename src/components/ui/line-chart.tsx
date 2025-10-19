@@ -13,11 +13,11 @@ interface LineChartProps {
   className?: string;
 }
 
-export const LineChart: React.FC<LineChartProps> = ({ 
-  data, 
-  width = 400, 
-  height = 200, 
-  className = "" 
+export const LineChart: React.FC<LineChartProps> = ({
+  data,
+  width = 400,
+  height = 200,
+  className = "",
 }) => {
   if (data.length === 0) {
     return (
@@ -33,13 +33,29 @@ export const LineChart: React.FC<LineChartProps> = ({
   const minY = Math.min(...data.map(d => d.y));
   const maxY = Math.max(...data.map(d => d.y));
 
+  const singlePointX = minX === maxX;
+  const singlePointY = minY === maxY;
+
   const padding = 40;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
+  const chartWidth = Math.max(width - padding * 2, 1);
+  const chartHeight = Math.max(height - padding * 2, 1);
 
   // Scale data points to chart coordinates
-  const scaleX = (x: number) => padding + ((x - minX) / (maxX - minX)) * chartWidth;
-  const scaleY = (y: number) => padding + ((maxY - y) / (maxY - minY)) * chartHeight;
+  const scaleX = (x: number) => {
+    if (singlePointX) {
+      return padding + chartWidth / 2;
+    }
+    const rangeX = maxX - minX;
+    return padding + ((x - minX) / rangeX) * chartWidth;
+  };
+
+  const scaleY = (y: number) => {
+    if (singlePointY) {
+      return padding + chartHeight / 2;
+    }
+    const rangeY = maxY - minY;
+    return padding + ((maxY - y) / rangeY) * chartHeight;
+  };
 
   // Generate path for the line
   const pathData = data
@@ -72,9 +88,20 @@ export const LineChart: React.FC<LineChartProps> = ({
     return date.toLocaleDateString();
   };
 
+  const yTicks =
+    singlePointY
+      ? [minY]
+      : [minY, (minY + maxY) / 2, maxY];
+
   return (
     <div className={`relative ${className}`}>
-      <svg width={width} height={height} className="overflow-visible">
+      <svg
+        width="100%"
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        className="overflow-visible"
+        preserveAspectRatio="none"
+      >
         {/* Grid lines */}
         <defs>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -84,7 +111,7 @@ export const LineChart: React.FC<LineChartProps> = ({
         <rect width="100%" height="100%" fill="url(#grid)" />
         
         {/* Y-axis labels */}
-        {[minY, (minY + maxY) / 2, maxY].map((value, index) => {
+        {yTicks.map((value, index) => {
           const y = scaleY(value);
           return (
             <g key={index}>
@@ -97,7 +124,7 @@ export const LineChart: React.FC<LineChartProps> = ({
         })}
         
         {/* X-axis labels */}
-        {data.length > 1 && (
+        {data.length > 1 && !singlePointX && (
           <>
             <text x={padding} y={height - 5} textAnchor="start" className="text-xs fill-muted-foreground">
               {formatTime(minX)}

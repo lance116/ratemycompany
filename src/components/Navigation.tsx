@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Trophy, Zap, MessageSquare } from "lucide-react";
+import { AuthDialog } from "@/components/AuthDialog";
 
 const Navigation = () => {
   const location = useLocation();
@@ -45,6 +46,7 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            <AuthDialog />
           </div>
 
           {/* Mobile menu button */}
@@ -94,6 +96,9 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            <div className="px-3 py-2">
+              <AuthDialog />
+            </div>
           </div>
         </div>
       )}

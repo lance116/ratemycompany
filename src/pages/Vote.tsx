@@ -1,82 +1,114 @@
-import { useState, useEffect } from "react";
-import { getCompanies, Company } from "@/data/companies";
-import { calculateEloChange, updateStoredRating } from "@/utils/elo";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchLeaderboardCompanies,
+  LeaderboardCompany,
+  recordMatchup,
+} from "@/data/companies";
+import { calculateEloChange } from "@/utils/elo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PayStats } from "@/components/ui/pay-stats";
 import { Star, Trophy } from "lucide-react";
+import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
+
+type CompanyPair = [LeaderboardCompany, LeaderboardCompany];
+
+const defaultLogo = "https://placehold.co/160x160?text=Logo";
 
 const Vote = () => {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [currentPair, setCurrentPair] = useState<[Company, Company] | null>(null);
+  const queryClient = useQueryClient();
+  const { user } = useSupabaseAuth();
+
+  const { data: companies = [], isLoading } = useQuery({
+    queryKey: ["leaderboard"],
+    queryFn: fetchLeaderboardCompanies,
+    staleTime: 1000 * 30,
+  });
+
+  const [currentPair, setCurrentPair] = useState<CompanyPair | null>(null);
   const [isVoting, setIsVoting] = useState(false);
   const [votes, setVotes] = useState(0);
-  const [winnerPosition, setWinnerPosition] = useState<'left' | 'right' | null>(null);
+  const [winnerPosition, setWinnerPosition] = useState<"left" | "right" | null>(null);
   const [completedMatchups, setCompletedMatchups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const loadedCompanies = getCompanies();
-    setCompanies(loadedCompanies);
-    setCurrentPair(getRandomPair(loadedCompanies, [], new Set()));
-  }, []);
+    if (companies.length < 2) {
+      return;
+    }
+    setCurrentPair(prev => {
+      if (prev) {
+        return prev;
+      }
+      return getRandomPair(companies, [], new Set());
+    });
+  }, [companies]);
 
-  // Helper function to create a matchup key (sorted by ID to ensure consistency)
-  const createMatchupKey = (company1: Company, company2: Company): string => {
-    const [id1, id2] = [company1.id, company2.id].sort((a, b) => a - b);
+  const companyPool = useMemo(() => companies, [companies]);
+
+  const createMatchupKey = (company1: LeaderboardCompany, company2: LeaderboardCompany) => {
+    const [id1, id2] = [company1.id, company2.id].sort((a, b) => a.localeCompare(b));
     return `${id1}-${id2}`;
   };
 
-  const getRandomPair = (companiesList: Company[], excludeIds: (string | number)[] = [], completedMatchups: Set<string> = new Set()) => {
+  const getRandomPair = (
+    companiesList: LeaderboardCompany[],
+    excludeIds: string[] = [],
+    completedSet: Set<string> = new Set()
+  ): CompanyPair => {
     const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
-    
-    // Try to find a pair that hasn't been matched before
     const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
-    
-    for (let i = 0; i < shuffled.length; i++) {
-      for (let j = i + 1; j < shuffled.length; j++) {
+
+    for (let i = 0; i < shuffled.length; i += 1) {
+      for (let j = i + 1; j < shuffled.length; j += 1) {
         const matchupKey = createMatchupKey(shuffled[i], shuffled[j]);
-        if (!completedMatchups.has(matchupKey)) {
-          return [shuffled[i], shuffled[j]] as [Company, Company];
+        if (!completedSet.has(matchupKey)) {
+          return [shuffled[i], shuffled[j]];
         }
       }
     }
-    
-    // If all possible pairs have been completed, return any random pair
-    return [shuffled[0], shuffled[1]] as [Company, Company];
+
+    return [shuffled[0], shuffled[1]];
   };
 
-  const getNextChallenger = (companiesList: Company[], excludeIds: (string | number)[], winner: Company, completedMatchups: Set<string> = new Set()) => {
+  const getNextChallenger = (
+    companiesList: LeaderboardCompany[],
+    excludeIds: string[],
+    winner: LeaderboardCompany,
+    completedSet: Set<string> = new Set()
+  ) => {
     const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
     const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
-    
-    // Try to find a challenger that hasn't faced the winner before
+
     for (const company of shuffled) {
       const matchupKey = createMatchupKey(winner, company);
-      if (!completedMatchups.has(matchupKey)) {
+      if (!completedSet.has(matchupKey)) {
         return company;
       }
     }
-    
-    // If all companies have faced the winner, return any available company
+
     return shuffled[0];
   };
 
   const handleDontKnow = () => {
-    if (!currentPair) return;
-    
+    if (!currentPair) {
+      return;
+    }
+
     const [leftCompany, rightCompany] = currentPair;
-    
-    if (winnerPosition === null) {
-      // At start - replace both companies with new ones
-      const newPair = getRandomPair(companies, [], completedMatchups);
+
+    if (!winnerPosition) {
+      const newPair = getRandomPair(companyPool, [], completedMatchups);
       setCurrentPair(newPair);
     } else {
-      // Mid-game - keep the winner, replace the challenger
-      const updatedWinner = companies.find(company => company.id === (winnerPosition === 'left' ? leftCompany.id : rightCompany.id));
-      const newChallenger = getNextChallenger(companies, [updatedWinner?.id || ''], updatedWinner!, completedMatchups);
-      
+      const winnerId = winnerPosition === "left" ? leftCompany.id : rightCompany.id;
+      const updatedWinner = companyPool.find(company => company.id === winnerId);
+      const newChallenger = updatedWinner
+        ? getNextChallenger(companyPool, [updatedWinner.id], updatedWinner, completedMatchups)
+        : null;
+
       if (updatedWinner && newChallenger) {
-        if (winnerPosition === 'left') {
+        if (winnerPosition === "left") {
           setCurrentPair([updatedWinner, newChallenger]);
         } else {
           setCurrentPair([newChallenger, updatedWinner]);
@@ -85,82 +117,105 @@ const Vote = () => {
     }
   };
 
-  const handleVote = async (winner: Company) => {
-    if (isVoting || !currentPair) return;
-    
+  const handleVote = async (winner: LeaderboardCompany) => {
+    if (isVoting || !currentPair) {
+      return;
+    }
+
     setIsVoting(true);
-    setVotes(votes + 1);
-    
+    setVotes(prev => prev + 1);
+
     const [leftCompany, rightCompany] = currentPair;
     const loser = winner.id === leftCompany.id ? rightCompany : leftCompany;
-    
-    // Record this matchup as completed
+
     const matchupKey = createMatchupKey(winner, loser);
     setCompletedMatchups(prev => new Set([...prev, matchupKey]));
-    console.log('Recorded completed matchup:', matchupKey, `${winner.name} vs ${loser.name}`);
-    
-    // Calculate new ELO ratings
+
     const { winnerNewRating, loserNewRating } = calculateEloChange(winner.elo, loser.elo);
-    
-    // Update stored ratings with current company rankings
-    const sortedCompanies = [...companies].sort((a, b) => b.elo - a.elo);
-    updateStoredRating(winner.id, winnerNewRating, sortedCompanies);
-    updateStoredRating(loser.id, loserNewRating, sortedCompanies);
-    
-    // Update local company list with new ratings
-    const updatedCompanies = companies.map(company => {
+    const optimisticCompanies = companyPool.map(company => {
       if (company.id === winner.id) {
         return { ...company, elo: winnerNewRating };
-      } else if (company.id === loser.id) {
+      }
+      if (company.id === loser.id) {
         return { ...company, elo: loserNewRating };
       }
       return company;
     });
-    
-    setCompanies(updatedCompanies);
-    
-    // Simulate API call delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Winner-stays logic: winner stays in same position, get new challenger
-    // Always determine where the winner was and update position
+
+    queryClient.setQueryData(["leaderboard"], optimisticCompanies);
+
     const winnerWasLeft = winner.id === leftCompany.id;
-    const lockedPosition = winnerWasLeft ? 'left' : 'right';
-    
+    const lockedPosition = winnerWasLeft ? "left" : "right";
+
     if (winnerPosition === null) {
-      // First vote - set winner's position
-      console.log('FIRST VOTE - Winner was on:', lockedPosition, 'Winner:', winner.name);
       setWinnerPosition(lockedPosition);
-    } else {
-      // Subsequent votes - update winner's position if it changed
-      console.log('SUBSEQUENT VOTE - Winner was on:', lockedPosition, 'Winner:', winner.name, 'Previous position:', winnerPosition);
+    } else if (winnerPosition !== lockedPosition) {
       setWinnerPosition(lockedPosition);
     }
-    
-    // Get updated winner and new challenger (avoiding completed matchups)
-    const updatedWinner = updatedCompanies.find(company => company.id === winner.id);
+
+    const updatedWinner = optimisticCompanies.find(company => company.id === winner.id);
     const newCompletedMatchups = new Set([...completedMatchups, matchupKey]);
-    const newChallenger = getNextChallenger(updatedCompanies, [winner.id], updatedWinner!, newCompletedMatchups);
-    
+    const newChallenger = updatedWinner
+      ? getNextChallenger(optimisticCompanies, [winner.id], updatedWinner, newCompletedMatchups)
+      : null;
+
     if (updatedWinner && newChallenger) {
-      // Winner stays in their current position
-      if (lockedPosition === 'left') {
-        console.log('PLACING WINNER ON LEFT - Winner:', updatedWinner.name, 'Challenger:', newChallenger.name);
+      if (lockedPosition === "left") {
         setCurrentPair([updatedWinner, newChallenger]);
       } else {
-        console.log('PLACING WINNER ON RIGHT - Winner:', updatedWinner.name, 'Challenger:', newChallenger.name);
         setCurrentPair([newChallenger, updatedWinner]);
       }
     }
-    
-    setIsVoting(false);
+
+    try {
+      const result = winner.id === leftCompany.id ? "a" : "b";
+      const updatedRows = await recordMatchup({
+        companyA: leftCompany.id,
+        companyB: rightCompany.id,
+        result,
+        submittedBy: user?.id ?? null,
+      });
+
+      if (Array.isArray(updatedRows) && updatedRows.length > 0) {
+        queryClient.setQueryData<LeaderboardCompany[]>(["leaderboard"], previous => {
+          if (!previous) {
+            return previous;
+          }
+          const updateMap = new Map(
+            updatedRows.map(row => [row.company_id, row])
+          );
+          return previous.map(company => {
+            const update = updateMap.get(company.id);
+            if (!update) {
+              return company;
+            }
+            return {
+              ...company,
+              elo: Math.round(Number(update.rating)),
+              matchesPlayed: update.matches_played,
+              wins: update.wins,
+              losses: update.losses,
+              draws: update.draws,
+              rank: update.rank,
+            };
+          });
+        });
+      }
+    } catch (error) {
+      console.error("Failed to record matchup", error);
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      setIsVoting(false);
+    }
   };
 
-  if (!currentPair) {
+  if (isLoading || !currentPair) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
   const [leftCompany, rightCompany] = currentPair;
+  const leftLogo = leftCompany.logoUrl ?? defaultLogo;
+  const rightLogo = rightCompany.logoUrl ?? defaultLogo;
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,9 +234,8 @@ const Vote = () => {
         </div>
 
         <div className="relative">
-          <div className="grid grid-cols-2 gap-4 max-w-5xl mx-auto">
-            {/* Left Company */}
-            <Card 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+            <Card
               className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                 isVoting ? "pointer-events-none opacity-70" : ""
               }`}
@@ -190,7 +244,7 @@ const Vote = () => {
               <CardContent className="p-6 text-center">
                 <div className="mb-4">
                   <img
-                    src={leftCompany.logo}
+                    src={leftLogo}
                     alt={leftCompany.name}
                     className="h-12 md:h-16 mx-auto object-contain"
                   />
@@ -198,39 +252,36 @@ const Vote = () => {
                 <h3 className="text-lg md:text-2xl font-bold text-foreground mb-2">
                   {leftCompany.name}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                  {leftCompany.description}
-                </p>
-                <div className="flex items-center justify-center space-x-1 mb-2">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-foreground text-sm">
-                    {leftCompany.elo}
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    ELO
-                  </span>
-                </div>
-                <div className="flex justify-center mb-3">
-                  <PayStats pay={leftCompany.pay} />
-                </div>
-                <div className="flex flex-wrap gap-1 justify-center mb-4">
-                  {leftCompany.tags.slice(0, 2).map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full"
-                    >
-                      {tag}
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <Trophy className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">{leftCompany.elo}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <Star className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">
+                      {leftCompany.averageReviewScore
+                        ? leftCompany.averageReviewScore.toFixed(1)
+                        : "N/A"}
                     </span>
-                  ))}
+                  </div>
                 </div>
-                <Button variant="outline" size="sm" className="w-full">
-                  Choose {leftCompany.name}
-                </Button>
+                <PayStats pay={leftCompany.payDisplay} />
               </CardContent>
             </Card>
 
-            {/* Right Company */}
-            <Card 
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <span className="text-sm text-muted-foreground">or</span>
+              <Button
+                variant="outline"
+                onClick={handleDontKnow}
+                disabled={isVoting}
+              >
+                I&apos;m not sure
+              </Button>
+            </div>
+
+            <Card
               className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
                 isVoting ? "pointer-events-none opacity-70" : ""
               }`}
@@ -239,7 +290,7 @@ const Vote = () => {
               <CardContent className="p-6 text-center">
                 <div className="mb-4">
                   <img
-                    src={rightCompany.logo}
+                    src={rightLogo}
                     alt={rightCompany.name}
                     className="h-12 md:h-16 mx-auto object-contain"
                   />
@@ -247,61 +298,24 @@ const Vote = () => {
                 <h3 className="text-lg md:text-2xl font-bold text-foreground mb-2">
                   {rightCompany.name}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                  {rightCompany.description}
-                </p>
-                <div className="flex items-center justify-center space-x-1 mb-2">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-foreground text-sm">
-                    {rightCompany.elo}
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    ELO
-                  </span>
-                </div>
-                <div className="flex justify-center mb-3">
-                  <PayStats pay={rightCompany.pay} />
-                </div>
-                <div className="flex flex-wrap gap-1 justify-center mb-4">
-                  {rightCompany.tags.slice(0, 2).map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full"
-                    >
-                      {tag}
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <Trophy className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">{rightCompany.elo}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-muted-foreground">
+                    <Star className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-foreground">
+                      {rightCompany.averageReviewScore
+                        ? rightCompany.averageReviewScore.toFixed(1)
+                        : "N/A"}
                     </span>
-                  ))}
+                  </div>
                 </div>
-                <Button variant="outline" size="sm" className="w-full">
-                  Choose {rightCompany.name}
-                </Button>
+                <PayStats pay={rightCompany.payDisplay} />
               </CardContent>
             </Card>
           </div>
-
-          {/* VS Divider - Centered between cards */}
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-            <div className="bg-primary text-primary-foreground px-4 py-2 rounded-full font-bold text-sm md:text-lg shadow-lg border-4 border-background">
-              VS
-            </div>
-          </div>
-        </div>
-
-        {/* Don't Know Button */}
-        <div className="text-center mt-6">
-          <Button 
-            variant="outline" 
-            onClick={handleDontKnow}
-            className="text-sm"
-          >
-            I don't know.
-          </Button>
-        </div>
-
-        <div className="text-center mt-8">
-          <p className="text-sm text-muted-foreground">
-            Click on any company to vote • ELO ratings update in real-time based on chess rating system
-          </p>
         </div>
       </div>
     </div>
