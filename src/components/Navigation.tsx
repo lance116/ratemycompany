@@ -25,7 +25,7 @@ const Navigation = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="flex items-center space-x-8">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -33,22 +33,25 @@ const Navigation = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-transform ${
+                  className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-transform ${
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:-translate-y-1"
                   }`}
                 >
                   <Icon size={18} />
-                  <span>{item.label}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </Link>
               );
             })}
-            <AuthDialog />
+            <div className="hidden sm:block">
+              <AuthDialog />
+            </div>
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="sm:hidden flex items-center gap-2">
+            <AuthDialog />
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-muted-foreground hover:text-foreground p-2"

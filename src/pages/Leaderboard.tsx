@@ -174,7 +174,7 @@ const Leaderboard = () => {
                 <img
                   src={logo}
                   alt={company.name}
-                  className="h-[78%] w-[78%] object-contain"
+                  className="h-[65%] w-[65%] object-contain"
                 />
               </div>
               <div className="space-y-3">
@@ -222,8 +222,8 @@ const Leaderboard = () => {
                   options: {
                     podiumRank: 2,
                     wrapperClass: "col-span-1 md:order-1",
-                    cardHeightClass: "md:min-h-[360px]",
-                    logoBoxClass: "h-24 w-24 md:h-24 md:w-24",
+                    cardHeightClass: "min-h-[280px] md:min-h-[360px]",
+                    logoBoxClass: "h-16 w-16 md:h-24 md:w-24",
                   },
                 },
                 {
@@ -232,8 +232,8 @@ const Leaderboard = () => {
                   options: {
                     podiumRank: 1,
                     wrapperClass: "col-span-1 md:order-2",
-                    cardHeightClass: "md:min-h-[420px]",
-                    logoBoxClass: "h-28 w-28 md:h-28 md:w-28",
+                    cardHeightClass: "min-h-[320px] md:min-h-[420px]",
+                    logoBoxClass: "h-20 w-20 md:h-28 md:w-28",
                   },
                 },
                 {
@@ -242,8 +242,8 @@ const Leaderboard = () => {
                   options: {
                     podiumRank: 3,
                     wrapperClass: "col-span-1 md:order-3",
-                    cardHeightClass: "md:min-h-[340px]",
-                    logoBoxClass: "h-20 w-20 md:h-20 md:w-20",
+                    cardHeightClass: "min-h-[240px] md:min-h-[340px]",
+                    logoBoxClass: "h-14 w-14 md:h-20 md:w-20",
                   },
                 },
               ]
