@@ -412,8 +412,8 @@ const CompanyCard = ({
           isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
         )}
       />
-      <div className="relative z-10 flex h-full flex-col justify-between gap-4 sm:items-center">
-        <div className="flex w-full flex-col items-start gap-4 text-left sm:items-center sm:text-center">
+      <div className="relative z-10 flex h-full flex-col items-center justify-between gap-4 text-center">
+        <div className="flex w-full flex-col items-center gap-4">
           <div className="flex w-full items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]">
             <img
               src={logoSrc}
@@ -422,12 +422,12 @@ const CompanyCard = ({
             />
           </div>
 
-          <div className="flex w-full flex-col items-start gap-2 sm:items-center">
-            <h2 className="flex min-h-[4rem] items-center text-2xl font-semibold tracking-tight text-slate-900 leading-tight sm:justify-center sm:text-3xl">
+          <div className="flex w-full flex-col items-center gap-2">
+            <h2 className="flex min-h-[4rem] items-center justify-center text-2xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl">
               {company.name}
             </h2>
 
-            <div className="flex min-h-[3rem] items-center justify-start sm:justify-center">
+            <div className="flex min-h-[3rem] items-center justify-center">
               <div className="flex flex-wrap items-baseline gap-2">
                 <AnimatedStat
                   label="Elo"
