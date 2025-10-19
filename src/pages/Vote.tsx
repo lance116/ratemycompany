@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchLeaderboardCompanies,
@@ -9,7 +9,9 @@ import { calculateEloChange } from "@/utils/elo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PayStats } from "@/components/ui/pay-stats";
-import { Star, Trophy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Sparkles, Star, Trophy } from "lucide-react";
 import { useSupabaseAuth } from "@/providers/SupabaseAuthProvider";
 
 type CompanyPair = [LeaderboardCompany, LeaderboardCompany];
@@ -29,7 +31,6 @@ const Vote = () => {
   const [currentPair, setCurrentPair] = useState<CompanyPair | null>(null);
   const [isVoting, setIsVoting] = useState(false);
   const [votes, setVotes] = useState(0);
-  const [winnerPosition, setWinnerPosition] = useState<"left" | "right" | null>(null);
   const [completedMatchups, setCompletedMatchups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -71,50 +72,13 @@ const Vote = () => {
     return [shuffled[0], shuffled[1]];
   };
 
-  const getNextChallenger = (
-    companiesList: LeaderboardCompany[],
-    excludeIds: string[],
-    winner: LeaderboardCompany,
-    completedSet: Set<string> = new Set()
-  ) => {
-    const availableCompanies = companiesList.filter(company => !excludeIds.includes(company.id));
-    const shuffled = [...availableCompanies].sort(() => 0.5 - Math.random());
-
-    for (const company of shuffled) {
-      const matchupKey = createMatchupKey(winner, company);
-      if (!completedSet.has(matchupKey)) {
-        return company;
-      }
-    }
-
-    return shuffled[0];
-  };
-
   const handleDontKnow = () => {
     if (!currentPair) {
       return;
     }
 
-    const [leftCompany, rightCompany] = currentPair;
-
-    if (!winnerPosition) {
-      const newPair = getRandomPair(companyPool, [], completedMatchups);
-      setCurrentPair(newPair);
-    } else {
-      const winnerId = winnerPosition === "left" ? leftCompany.id : rightCompany.id;
-      const updatedWinner = companyPool.find(company => company.id === winnerId);
-      const newChallenger = updatedWinner
-        ? getNextChallenger(companyPool, [updatedWinner.id], updatedWinner, completedMatchups)
-        : null;
-
-      if (updatedWinner && newChallenger) {
-        if (winnerPosition === "left") {
-          setCurrentPair([updatedWinner, newChallenger]);
-        } else {
-          setCurrentPair([newChallenger, updatedWinner]);
-        }
-      }
-    }
+    const newPair = getRandomPair(companyPool, [], completedMatchups);
+    setCurrentPair(newPair);
   };
 
   const handleVote = async (winner: LeaderboardCompany) => {
@@ -129,8 +93,6 @@ const Vote = () => {
     const loser = winner.id === leftCompany.id ? rightCompany : leftCompany;
 
     const matchupKey = createMatchupKey(winner, loser);
-    setCompletedMatchups(prev => new Set([...prev, matchupKey]));
-
     const { winnerNewRating, loserNewRating } = calculateEloChange(winner.elo, loser.elo);
     const optimisticCompanies = companyPool.map(company => {
       if (company.id === winner.id) {
@@ -144,28 +106,11 @@ const Vote = () => {
 
     queryClient.setQueryData(["leaderboard"], optimisticCompanies);
 
-    const winnerWasLeft = winner.id === leftCompany.id;
-    const lockedPosition = winnerWasLeft ? "left" : "right";
-
-    if (winnerPosition === null) {
-      setWinnerPosition(lockedPosition);
-    } else if (winnerPosition !== lockedPosition) {
-      setWinnerPosition(lockedPosition);
-    }
-
-    const updatedWinner = optimisticCompanies.find(company => company.id === winner.id);
     const newCompletedMatchups = new Set([...completedMatchups, matchupKey]);
-    const newChallenger = updatedWinner
-      ? getNextChallenger(optimisticCompanies, [winner.id], updatedWinner, newCompletedMatchups)
-      : null;
+    const nextPair = getRandomPair(optimisticCompanies, [], newCompletedMatchups);
 
-    if (updatedWinner && newChallenger) {
-      if (lockedPosition === "left") {
-        setCurrentPair([updatedWinner, newChallenger]);
-      } else {
-        setCurrentPair([newChallenger, updatedWinner]);
-      }
-    }
+    setCompletedMatchups(newCompletedMatchups);
+    setCurrentPair(nextPair);
 
     try {
       const result = winner.id === leftCompany.id ? "a" : "b";
@@ -214,13 +159,59 @@ const Vote = () => {
   }
 
   const [leftCompany, rightCompany] = currentPair;
-  const leftLogo = leftCompany.logoUrl ?? defaultLogo;
-  const rightLogo = rightCompany.logoUrl ?? defaultLogo;
+
+  const renderCompanyCard = (company: LeaderboardCompany) => {
+    const logo = company.logoUrl ?? defaultLogo;
+    const isActive = winnerPosition === position;
+
+    return (
+      <Card
+        key={company.id}
+        className={cn(
+          "w-full cursor-pointer border border-transparent bg-card/80 transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-xl",
+          isVoting && "pointer-events-none opacity-70",
+          isActive && "border-primary/60 shadow-primary/20"
+        )}
+        onClick={() => handleVote(company)}
+      >
+        <CardContent className="p-6 text-center">
+          <div className="mx-auto mb-5 flex h-32 w-32 items-center justify-center rounded-xl bg-muted/50 backdrop-blur">
+            <img
+              src={logo}
+              alt={company.name}
+              className="h-20 w-20 object-contain"
+            />
+          </div>
+          <h3 className="text-lg md:text-2xl font-bold text-foreground mb-2">
+            {company.name}
+          </h3>
+          <div className="mb-4 flex items-center justify-center space-x-4 text-sm font-medium text-muted-foreground">
+            <div className="flex items-center space-x-1">
+              <Trophy className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-foreground">{company.elo}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Star className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-foreground">
+                {company.averageReviewScore
+                  ? company.averageReviewScore.toFixed(1)
+                  : "N/A"}
+              </span>
+            </div>
+          </div>
+          <PayStats pay={company.payDisplay} />
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
+          <Badge variant="outline" className="mb-3 px-3 py-1 text-xs uppercase tracking-[0.2em]">
+            Live Head-to-Head
+          </Badge>
           <h1 className="text-4xl font-bold text-foreground mb-2">
             Which SWE internship would you prefer?
           </h1>
@@ -234,83 +225,24 @@ const Vote = () => {
         </div>
 
         <div className="flex flex-col items-center space-y-6">
-          <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
-            <Card
-              className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                isVoting ? "pointer-events-none opacity-70" : ""
-              }`}
-              onClick={() => handleVote(leftCompany)}
-            >
-              <CardContent className="p-6 text-center">
-                <div className="mb-4">
-                  <img
-                    src={leftLogo}
-                    alt={leftCompany.name}
-                    className="h-12 md:h-16 mx-auto object-contain"
-                  />
-                </div>
-                <h3 className="text-lg md:text-2xl font-bold text-foreground mb-2">
-                  {leftCompany.name}
-                </h3>
-                <div className="flex items-center justify-center space-x-3 mb-4">
-                  <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Trophy className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">{leftCompany.elo}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Star className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">
-                      {leftCompany.averageReviewScore
-                        ? leftCompany.averageReviewScore.toFixed(1)
-                        : "N/A"}
-                    </span>
-                  </div>
-                </div>
-                <PayStats pay={leftCompany.payDisplay} />
-              </CardContent>
-            </Card>
+          <div className="flex w-full max-w-5xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            {renderCompanyCard(leftCompany)}
 
-            <Card
-              className={`cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                isVoting ? "pointer-events-none opacity-70" : ""
-              }`}
-              onClick={() => handleVote(rightCompany)}
-            >
-              <CardContent className="p-6 text-center">
-                <div className="mb-4">
-                  <img
-                    src={rightLogo}
-                    alt={rightCompany.name}
-                    className="h-12 md:h-16 mx-auto object-contain"
-                  />
-                </div>
-                <h3 className="text-lg md:text-2xl font-bold text-foreground mb-2">
-                  {rightCompany.name}
-                </h3>
-                <div className="flex items-center justify-center space-x-3 mb-4">
-                  <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Trophy className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">{rightCompany.elo}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 text-muted-foreground">
-                    <Star className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-foreground">
-                      {rightCompany.averageReviewScore
-                        ? rightCompany.averageReviewScore.toFixed(1)
-                        : "N/A"}
-                    </span>
-                  </div>
-                </div>
-                <PayStats pay={rightCompany.payDisplay} />
-              </CardContent>
-            </Card>
+            <div className="flex h-full items-center justify-center">
+              <div className="rounded-full border border-border bg-background/70 px-6 py-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
+                VS
+              </div>
+            </div>
+
+            {renderCompanyCard(rightCompany)}
           </div>
 
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={handleDontKnow}
             disabled={isVoting}
-          >
+            >
+            <Sparkles className="mr-2 h-4 w-4" />
             I&apos;m not sure
           </Button>
         </div>

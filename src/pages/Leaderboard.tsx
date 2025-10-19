@@ -95,11 +95,13 @@ const Leaderboard = () => {
                 </Badge>
               )}
             </div>
-            <img
-              src={logo}
-              alt={company.name}
-              className={`object-contain mx-auto ${podiumRank === 1 ? "h-20 w-20" : "h-16 w-16"}`}
-            />
+            <div className={`mx-auto flex items-center justify-center rounded-md bg-muted/40 ${podiumRank === 1 ? "h-28 w-28" : "h-24 w-24"}`}>
+              <img
+                src={logo}
+                alt={company.name}
+                className="h-20 w-20 object-contain"
+              />
+            </div>
             <h3 className="text-lg font-bold text-foreground mt-4 mb-1">
               {company.name}
             </h3>
@@ -175,11 +177,13 @@ const Leaderboard = () => {
                       </div>
 
                       <div className="flex-shrink-0">
-                        <img
-                          src={logo}
-                          alt={company.name}
-                          className="h-12 w-12 object-contain"
-                        />
+                        <div className="h-20 w-20 rounded-md bg-muted/40 flex items-center justify-center">
+                          <img
+                            src={logo}
+                            alt={company.name}
+                            className="h-16 w-16 object-contain"
+                          />
+                        </div>
                       </div>
 
                       <div className="flex-grow">
