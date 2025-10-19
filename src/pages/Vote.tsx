@@ -307,8 +307,14 @@ const Vote = () => {
         <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-b from-white/30 via-white/10 to-transparent" />
       )}
 
-      <footer className="relative z-10 border-t border-slate-200/80 bg-white/85">
+      <footer className="relative z-10 border-t border-slate-200/80 bg-white/85 w-full">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          {/* Mobile branding */}
+          <div className="sm:hidden flex items-center gap-2 mb-4 w-full">
+            <img src="/ratemycompany logo.png" alt="ratemycompany" className="h-8 w-8 object-contain flex-shrink-0" />
+            <span className="font-bold text-foreground">ratemycompany.ca</span>
+          </div>
+
           <div className="space-y-1.5">
             <p className="text-sm font-semibold text-slate-800">
               &copy; {new Date().getFullYear()} ratemycompany. All rights reserved.

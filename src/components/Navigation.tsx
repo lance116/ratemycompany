@@ -15,6 +15,40 @@ const Navigation = () => {
 
   return (
     <>
+      {/* Mobile Top Navigation Bar */}
+      <div className="sm:hidden fixed top-0 left-0 right-0 bg-card border-b border-border z-50 w-full">
+        <div className="flex items-center justify-between h-16 px-4 gap-3 w-full">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <img src="/ratemycompany logo.png" alt="ratemycompany" className="h-8 w-8 object-contain flex-shrink-0" />
+            <span className="text-sm font-bold text-foreground whitespace-nowrap">ratemycompany.ca</span>
+          </Link>
+          
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center justify-center p-2 rounded-md text-xs font-medium transition-colors flex-shrink-0 ${
+                    isActive
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  <Icon size={16} />
+                </Link>
+              );
+            })}
+            <AuthDialog />
+          </div>
+        </div>
+      </div>
+
+      {/* Add padding to account for mobile top nav */}
+      <div className="sm:hidden h-16" />
+
       {/* Desktop Navigation */}
       <nav className="hidden sm:block bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-card/95 w-full">
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -83,34 +117,6 @@ const Navigation = () => {
           </div>
         )}
       </nav>
-
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40">
-        <div className="flex items-center justify-between h-16 px-3 gap-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex flex-col items-center justify-center gap-0.5 py-2 px-2 rounded-md text-[10px] font-medium transition-colors flex-1 ${
-                  isActive
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Icon size={18} />
-                <span className="line-clamp-1">{item.label}</span>
-              </Link>
-            );
-          })}
-          <div className="flex flex-col items-center justify-center gap-0.5 py-2 px-2 flex-1">
-            <AuthDialog />
-            <span className="text-[10px] font-medium text-muted-foreground">Sign in</span>
-          </div>
-        </div>
-      </div>
 
       {/* Add padding to body on mobile to account for bottom nav */}
       <div className="sm:hidden h-16" />
