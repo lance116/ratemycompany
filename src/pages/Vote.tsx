@@ -452,7 +452,7 @@ const Vote = () => {
                 layout.isCompact && "max-w-sm px-5 py-2.5 text-[0.72rem] tracking-[0.36em]"
               )}
             >
-              I don&apos;t know
+              Skip
             </Button>
           </div>
         </section>
