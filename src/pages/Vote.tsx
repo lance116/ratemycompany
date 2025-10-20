@@ -401,7 +401,7 @@ const Vote = () => {
                 isLoser={
                   selection !== null && selection !== "draw" && selection !== leftCompany.id
                 }
-                revealStats={selection !== null && selection !== "draw"}
+                revealStats={selection !== null}
                 statDelta={statDeltas[leftCompany.id]}
                 statTrigger={statTriggers[leftCompany.id]}
                 disabled={voteMutation.isPending || voteLocked}
@@ -415,7 +415,7 @@ const Vote = () => {
                 isLoser={
                   selection !== null && selection !== "draw" && selection !== rightCompany.id
                 }
-                revealStats={selection !== null && selection !== "draw"}
+                revealStats={selection !== null}
                 statDelta={statDeltas[rightCompany.id]}
                 statTrigger={statTriggers[rightCompany.id]}
                 disabled={voteMutation.isPending || voteLocked}
