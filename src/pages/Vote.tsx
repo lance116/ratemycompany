@@ -635,7 +635,7 @@ const CompanyCard = ({
             >
               {company.name}
             </h2>
-            <TierBadge label={tierLabel} />
+            <TierBadge label={tierLabel} revealed={revealStats} />
 
             <div
               className={cn(
