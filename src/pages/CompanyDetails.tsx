@@ -406,7 +406,7 @@ const CompanyDetails = () => {
                         {peakRank ?? "-"}
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">Best Rank</span>
+                    <span className="text-sm text-muted-foreground">Peak Rank</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-3 md:grid-cols-6 gap-4 pt-4 border-t border-border">
@@ -416,11 +416,17 @@ const CompanyDetails = () => {
                   </div>
                   <div className="text-center">
                     <span className="text-sm text-muted-foreground">Prestige</span>
-                    <div className="text-lg font-semibold text-foreground">{company.averagePrestige ? company.averagePrestige.toFixed(1) : "N/A"}/10</div>
+                    <div className="text-lg font-semibold text-foreground">
+                      {company.averagePrestige
+                        ? `${company.averagePrestige.toFixed(1)}/10`
+                        : "N/A"}
+                    </div>
                   </div>
                   <div className="text-center">
                     <span className="text-sm text-muted-foreground">Culture</span>
-                    <div className="text-lg font-semibold text-foreground">{company.averageCulture ? company.averageCulture.toFixed(1) : "N/A"}/10</div>
+                    <div className="text-lg font-semibold text-foreground">
+                      {company.averageCulture ? `${company.averageCulture.toFixed(1)}/10` : "N/A"}
+                    </div>
                   </div>
                   <div className="text-center">
                     <span className="text-sm text-muted-foreground">Wins</span>

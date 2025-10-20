@@ -8,6 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    font-size: 85%;
     --background: 0 0% 100%;
     --foreground: 0 0% 7%;
 
