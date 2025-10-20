@@ -201,6 +201,18 @@ const CompanyDetails = () => {
     [history]
   );
 
+  const rankHistoryData = useMemo(() => {
+    const rankedEntries = history.filter(
+      entry => typeof entry.rank === "number" && entry.rank !== null
+    );
+
+    return rankedEntries.map((entry, index) => ({
+      x: index + 1,
+      y: entry.rank as number,
+      label: index === rankedEntries.length - 1 ? "Now" : null,
+    }));
+  }, [history]);
+
   const peakRank = useMemo(() => {
     const ranks = history
       .map(entry => entry.rank)
@@ -437,6 +449,30 @@ const CompanyDetails = () => {
               </div>
             ) : (
               <LineChart data={historyData} width={600} height={280} className="mx-auto" />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-2 mb-4">
+              <h2 className="text-xl font-semibold text-foreground">Rank History</h2>
+              <span className="text-sm text-muted-foreground">
+                Lower values mean a better position on the leaderboard.
+              </span>
+            </div>
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-8 text-muted-foreground">
+                Loading chart...
+              </div>
+            ) : (
+              <LineChart
+                data={rankHistoryData}
+                width={600}
+                height={280}
+                invertY
+                className="mx-auto"
+              />
             )}
           </CardContent>
         </Card>

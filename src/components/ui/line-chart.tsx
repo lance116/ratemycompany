@@ -11,6 +11,7 @@ interface LineChartProps {
   width?: number;
   height?: number;
   className?: string;
+  invertY?: boolean;
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
@@ -18,6 +19,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   width = 400,
   height = 200,
   className = "",
+  invertY = false,
 }) => {
   if (data.length === 0) {
     return (
@@ -54,6 +56,14 @@ export const LineChart: React.FC<LineChartProps> = ({
       return padding + chartHeight / 2;
     }
     const rangeY = maxY - minY;
+    if (rangeY === 0) {
+      return padding + chartHeight / 2;
+    }
+
+    if (invertY) {
+      return padding + ((y - minY) / rangeY) * chartHeight;
+    }
+
     return padding + ((maxY - y) / rangeY) * chartHeight;
   };
 
