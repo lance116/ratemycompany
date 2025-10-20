@@ -6,12 +6,27 @@ interface DataPoint {
   label?: string;
 }
 
+interface ReferenceLine {
+  value: number;
+  label?: string;
+  color?: string;
+  dashed?: boolean;
+  align?: "left" | "right";
+}
+
+interface YBounds {
+  min?: number;
+  max?: number;
+}
+
 interface LineChartProps {
   data: DataPoint[];
   width?: number;
   height?: number;
   className?: string;
   invertY?: boolean;
+  referenceLines?: ReferenceLine[];
+  yBounds?: YBounds;
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
@@ -20,6 +35,8 @@ export const LineChart: React.FC<LineChartProps> = ({
   height = 200,
   className = "",
   invertY = false,
+  referenceLines = [],
+  yBounds,
 }) => {
   if (data.length === 0) {
     return (
@@ -30,10 +47,21 @@ export const LineChart: React.FC<LineChartProps> = ({
   }
 
   // Find min/max values for scaling
-  const minX = Math.min(...data.map(d => d.x));
-  const maxX = Math.max(...data.map(d => d.x));
-  const minY = Math.min(...data.map(d => d.y));
-  const maxY = Math.max(...data.map(d => d.y));
+  const xValues = data.map(d => d.x);
+  const yValues = data
+    .map(d => d.y)
+    .concat(referenceLines.map(ref => ref.value))
+    .concat(
+      typeof yBounds?.min === "number" ? [yBounds.min] : []
+    )
+    .concat(
+      typeof yBounds?.max === "number" ? [yBounds.max] : []
+    );
+
+  const minX = Math.min(...xValues);
+  const maxX = Math.max(...xValues);
+  const minY = Math.min(...yValues);
+  const maxY = Math.max(...yValues);
 
   const singlePointX = minX === maxX;
   const singlePointY = minY === maxY;
@@ -101,6 +129,38 @@ export const LineChart: React.FC<LineChartProps> = ({
       ? [minY]
       : [minY, (minY + maxY) / 2, maxY];
 
+  const renderReferenceLines = referenceLines.map((ref, index) => {
+    const y = scaleY(ref.value);
+    const color = ref.color ?? "hsl(var(--muted-foreground))";
+    const label = ref.label ?? Math.round(ref.value).toString();
+    const align = ref.align ?? "right";
+    const textX = align === "left" ? padding + 5 : width - padding - 5;
+    const isDashed = ref.dashed ?? true;
+
+    return (
+      <g key={`ref-${index}`}>
+        <line
+          x1={padding}
+          y1={y}
+          x2={width - padding}
+          y2={y}
+          stroke={color}
+          strokeWidth="1.5"
+          strokeDasharray={isDashed ? "6 4" : undefined}
+          opacity="0.7"
+        />
+        <text
+          x={textX}
+          y={y - 4}
+          textAnchor={align === "left" ? "start" : "end"}
+          className="text-xs fill-muted-foreground"
+        >
+          {label}
+        </text>
+      </g>
+    );
+  });
+
   return (
     <div className={`relative ${className}`}>
       <svg
@@ -153,6 +213,9 @@ export const LineChart: React.FC<LineChartProps> = ({
           strokeLinejoin="round"
         />
         
+        {/* Reference lines */}
+        {renderReferenceLines}
+
         {/* Data points */}
         {circles}
       </svg>
