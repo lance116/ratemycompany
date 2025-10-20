@@ -545,6 +545,10 @@ const CompanyCard = ({
   const [wasTouched, setWasTouched] = useState(false);
   const sizeVariant = layout.isCompact ? "compact" : layout.isTablet ? "tablet" : "default";
 
+  useEffect(() => {
+    setWasTouched(false);
+  }, [company.id]);
+
   const handleClick = () => {
     setWasTouched(true);
     onSelect();
@@ -580,10 +584,11 @@ const CompanyCard = ({
       />
       <div
         className={cn(
-          "relative z-10 flex h-full flex-col items-center justify-between gap-4 text-center",
+          "relative z-10 flex h-full flex-col items-center gap-4 text-center",
+          !layout.isDesktop && "justify-between",
           sizeVariant === "compact" && "gap-3",
           sizeVariant === "tablet" && "gap-5",
-          layout.isLandscape && "justify-center"
+          layout.isLandscape && !layout.isDesktop && "justify-center"
         )}
       >
         <div
@@ -595,6 +600,7 @@ const CompanyCard = ({
           <div
             className={cn(
               "flex w-full min-h-[10rem] items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]",
+              layout.isDesktop && "h-[10rem]",
               sizeVariant === "compact" && "min-h-[8.5rem] rounded-[1.35rem] px-3.5 py-6",
               sizeVariant === "tablet" && "min-h-[11.5rem] rounded-[1.65rem] px-5 py-8"
             )}
@@ -663,7 +669,8 @@ const CompanyCard = ({
           <div
             className={cn(
               "hidden w-full flex-wrap items-center justify-center gap-2 sm:flex",
-              sizeVariant === "tablet" && "gap-2.5"
+              sizeVariant === "tablet" && "gap-2.5",
+              layout.isDesktop && "mt-auto"
             )}
           >
             {company.tags.map((trait) => (
