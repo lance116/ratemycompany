@@ -556,13 +556,12 @@ const CompanyCard = ({
       onClick={handleClick}
       disabled={disabled}
       className={cn(
-        "vote-card relative flex h-full min-h-[20rem] w-full flex-col justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7 sm:text-center",
+        "vote-card relative flex h-full min-h-[20rem] w-full flex-col items-center justify-between overflow-hidden rounded-[2rem] border border-slate-200/85 bg-gradient-to-br from-white via-slate-50/80 to-white px-5 py-6 text-left transition-all duration-300 ease-out sm:px-6 sm:py-7 sm:text-center",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70",
         "disabled:cursor-not-allowed disabled:opacity-80",
         sizeVariant === "compact" && "min-h-[18rem] rounded-[1.7rem] px-3.5 py-5 sm:px-5",
         layout.isShortHeight && "min-h-[18.5rem]",
         sizeVariant === "tablet" && "min-h-[21.5rem] px-5 py-6 sm:px-7",
-        layout.isLandscape && !layout.isDesktop && "sm:text-left",
         !isWinner &&
         !isLoser &&
         !wasTouched &&
