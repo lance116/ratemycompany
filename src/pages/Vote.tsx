@@ -601,6 +601,7 @@ const CompanyCard = ({
             className={cn(
               "flex w-full min-h-[10rem] items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white px-4 py-8 shadow-[0_24px_70px_-45px_rgba(15,23,42,0.55)]",
               layout.isDesktop && "h-[10rem]",
+              layout.isTablet && "h-[11.5rem]",
               sizeVariant === "compact" && "min-h-[8.5rem] rounded-[1.35rem] px-3.5 py-6",
               sizeVariant === "tablet" && "min-h-[11.5rem] rounded-[1.65rem] px-5 py-8"
             )}
