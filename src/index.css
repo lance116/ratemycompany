@@ -287,39 +287,64 @@ All colors MUST be HSL.
     transform: translateY(0);
   }
 
+.winner-glow {
+  animation: voteWinnerLift 0.7s ease-out forwards, winnerPulse 2.6s ease-in-out forwards;
+  filter: saturate(1.18) brightness(1.06);
+  box-shadow:
+    0 26px 55px -28px rgba(217, 119, 6, 0.45),
+    0 18px 40px -32px rgba(251, 191, 36, 0.55);
+}
+
+.winner-glow::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(253, 230, 138, 0.6), transparent 55%),
+    radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.4), transparent 60%);
+  opacity: 0;
+  transform: scale(0.9);
+  filter: blur(8px);
+  pointer-events: none;
+  animation: winnerAura 1.1s ease-out forwards;
+}
+
+.winner-glow::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    hsla(var(--gold) / 0) 4%,
+    hsla(var(--gold) / 0.28) 22%,
+    hsla(var(--gold) / 0.85) 45%,
+    hsla(var(--gold) / 0.4) 62%,
+    hsla(var(--gold) / 0.14) 76%,
+    hsla(var(--gold) / 0) 90%
+  );
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translateX(-140%) rotate(2deg);
+  filter: blur(0.25px);
+  animation: rolexGleam 1.3s ease-out forwards 0.04s;
+}
+
+@media (max-width: 640px) {
   .winner-glow {
-    animation: voteWinnerLift 0.7s ease-out forwards;
-    filter: saturate(1.15) brightness(1.02);
+    animation: none;
+    filter: saturate(1.16) brightness(1.05);
   }
 
-  @media (max-width: 640px) {
-    .winner-glow {
-      animation: none;
-      filter: saturate(1.15) brightness(1.02);
-    }
-  }
-
+  .winner-glow::before,
   .winner-glow::after {
-    content: "";
-    position: absolute;
-    inset: -5px;
-    border-radius: inherit;
-    background: linear-gradient(
-      115deg,
-      hsla(var(--gold) / 0) 6%,
-      hsla(var(--gold) / 0.22) 24%,
-      hsla(var(--gold) / 0.78) 47%,
-      hsla(var(--gold) / 0.32) 60%,
-      hsla(var(--gold) / 0.08) 72%,
-      hsla(var(--gold) / 0) 90%
-    );
-    pointer-events: none;
-    mix-blend-mode: screen;
-    opacity: 0;
-    transform: translateX(-130%) rotate(4deg);
-    filter: blur(0.35px);
-    animation: rolexGleam 1.25s ease-out forwards 0.02s;
+    animation: none;
+    opacity: 0.85;
+    transform: none;
   }
+}
 
   .loser-sink {
     animation: voteLoserDrop 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
@@ -385,6 +410,36 @@ All colors MUST be HSL.
       transform: translateY(-12px) scale(1.014);
       box-shadow: 0 30px 86px -30px hsla(var(--gold) / 0.6);
       filter: saturate(1.18);
+    }
+  }
+
+  @keyframes winnerAura {
+    0% {
+      opacity: 0;
+      transform: scale(0.88);
+    }
+    40% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0.35;
+      transform: scale(1.06);
+    }
+  }
+
+  @keyframes winnerPulse {
+    0% {
+      filter: saturate(1.05) brightness(1.01);
+      transform: translateY(-2px) scale(1);
+    }
+    45% {
+      filter: saturate(1.22) brightness(1.08);
+      transform: translateY(-5px) scale(1.012);
+    }
+    100% {
+      filter: saturate(1.15) brightness(1.05);
+      transform: translateY(-3px) scale(1.002);
     }
   }
 
