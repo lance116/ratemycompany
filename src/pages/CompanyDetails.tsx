@@ -191,18 +191,88 @@ const CompanyDetails = () => {
     },
   });
 
-  const historyData = useMemo(
-    () =>
-      history.map((entry, index) => ({
-        x: index + 1,
-        y: entry.rating,
-        label: index === history.length - 1 ? "Now" : null,
-      })),
+  const chartHistory = useMemo(
+    () => history.slice(Math.max(history.length - 30, 0)),
     [history]
   );
 
+  const historyData = useMemo(
+    () =>
+      chartHistory.map((entry, index) => ({
+        x: index + 1,
+        y: entry.rating,
+        label: index === chartHistory.length - 1 ? "Now" : null,
+      })),
+    [chartHistory]
+  );
+
+  const ratingLimits = useMemo(() => {
+    if (!company) {
+      return null;
+    }
+
+    const slug = (company.slug ?? "").toLowerCase();
+    const name = (company.name ?? "").toLowerCase();
+    const floor = 800;
+    let ceiling = 3100;
+
+    const applyCap = (cap: number) => {
+      ceiling = Math.min(ceiling, cap);
+    };
+
+    if (slug.includes("tesla") || name.includes("tesla")) {
+      applyCap(1700);
+    }
+    if (slug.includes("tata") || name.includes("tata")) {
+      applyCap(1300);
+    }
+    if (slug.includes("walmart") || name.includes("walmart")) {
+      applyCap(1300);
+    }
+
+    return {
+      floor,
+      ceiling,
+      hasCustomCap: ceiling < 3100,
+    };
+  }, [company]);
+
+  const ratingReferenceLines = useMemo(() => {
+    if (!ratingLimits || !ratingLimits.hasCustomCap) {
+      return [];
+    }
+
+    return [
+      {
+        value: ratingLimits.floor,
+        label: `Floor (${ratingLimits.floor})`,
+        color: "hsl(var(--destructive))",
+        dashed: true,
+        align: "left" as const,
+      },
+      {
+        value: ratingLimits.ceiling,
+        label: `Cap (${ratingLimits.ceiling})`,
+        color: "hsl(var(--primary))",
+        dashed: true,
+        align: "left" as const,
+      },
+    ];
+  }, [ratingLimits]);
+
+  const ratingBounds = useMemo(() => {
+    if (!ratingLimits || !ratingLimits.hasCustomCap) {
+      return undefined;
+    }
+
+    return {
+      min: ratingLimits.floor,
+      max: ratingLimits.ceiling,
+    };
+  }, [ratingLimits]);
+
   const rankHistoryData = useMemo(() => {
-    const rankedEntries = history.filter(
+    const rankedEntries = chartHistory.filter(
       entry => typeof entry.rank === "number" && entry.rank !== null
     );
 
@@ -211,7 +281,7 @@ const CompanyDetails = () => {
       y: entry.rank as number,
       label: index === rankedEntries.length - 1 ? "Now" : null,
     }));
-  }, [history]);
+  }, [chartHistory]);
 
   const peakRank = useMemo(() => {
     const ranks = history
@@ -454,7 +524,14 @@ const CompanyDetails = () => {
                 Loading chart...
               </div>
             ) : (
-              <LineChart data={historyData} width={600} height={280} className="mx-auto" />
+              <LineChart
+                data={historyData}
+                width={600}
+                height={280}
+                className="mx-auto"
+                referenceLines={ratingReferenceLines}
+                yBounds={ratingBounds}
+              />
             )}
           </CardContent>
         </Card>
