@@ -401,6 +401,7 @@ const Vote = () => {
                 isLoser={
                   selection !== null && selection !== "draw" && selection !== leftCompany.id
                 }
+                revealStats={selection !== null && selection !== "draw"}
                 statDelta={statDeltas[leftCompany.id]}
                 statTrigger={statTriggers[leftCompany.id]}
                 disabled={voteMutation.isPending || voteLocked}
@@ -414,6 +415,7 @@ const Vote = () => {
                 isLoser={
                   selection !== null && selection !== "draw" && selection !== rightCompany.id
                 }
+                revealStats={selection !== null && selection !== "draw"}
                 statDelta={statDeltas[rightCompany.id]}
                 statTrigger={statTriggers[rightCompany.id]}
                 disabled={voteMutation.isPending || voteLocked}
@@ -520,6 +522,7 @@ type CardProps = {
   company: VoteMatchupCompany;
   isWinner: boolean;
   isLoser: boolean;
+  revealStats: boolean;
   statDelta?: StatsDelta;
   statTrigger?: number;
   disabled?: boolean;
@@ -531,6 +534,7 @@ const CompanyCard = ({
   company,
   isWinner,
   isLoser,
+  revealStats,
   statDelta,
   statTrigger,
   disabled,
@@ -638,6 +642,7 @@ const CompanyCard = ({
                 <AnimatedStat
                   label="Elo"
                   value={company.elo}
+                  revealed={revealStats}
                   delta={statDelta?.elo}
                   trigger={statTrigger}
                   size={sizeVariant}
@@ -645,6 +650,7 @@ const CompanyCard = ({
                 <AnimatedStat
                   label="Rank"
                   value={company.rank}
+                  revealed={revealStats}
                   delta={statDelta?.rank}
                   trigger={statTrigger}
                   size={sizeVariant}
@@ -679,27 +685,94 @@ const CompanyCard = ({
 type AnimatedStatProps = {
   label: string;
   value: number;
+  revealed: boolean;
   delta?: number;
   trigger?: number;
   size?: "compact" | "tablet" | "default";
 };
 
-const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: AnimatedStatProps) => {
+const MATRIX_GLYPHS = ["0", "1", "3", "4", "7", "8", "9"] as const;
+
+const getMatrixLength = (value: number) => {
+  const raw = String(Math.round(Math.abs(value)));
+  return Math.max(3, raw.length);
+};
+
+const generateMatrixString = (length: number) => {
+  let result = "";
+  for (let i = 0; i < length; i += 1) {
+    const glyph = MATRIX_GLYPHS[Math.floor(Math.random() * MATRIX_GLYPHS.length)];
+    result += glyph;
+  }
+  return result;
+};
+
+const AnimatedStat = ({
+  label,
+  value,
+  revealed,
+  delta,
+  trigger,
+  size = "default",
+}: AnimatedStatProps) => {
+  const charCount = getMatrixLength(value);
+  const minWidthStyle = { minWidth: `${charCount}ch` };
   const [displayValue, setDisplayValue] = useState<number>(value);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<"rise" | "fall" | "steady">("steady");
-  const intervalRef = useRef<number | null>(null);
+  const [matrixString, setMatrixString] = useState<string>(() => generateMatrixString(charCount));
+  const valueIntervalRef = useRef<number | null>(null);
+  const matrixIntervalRef = useRef<number | null>(null);
   const prevValueRef = useRef<number>(value);
 
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
+      if (valueIntervalRef.current) {
+        window.clearInterval(valueIntervalRef.current);
+        valueIntervalRef.current = null;
+      }
+      if (matrixIntervalRef.current) {
+        window.clearInterval(matrixIntervalRef.current);
+        matrixIntervalRef.current = null;
       }
     };
   }, []);
 
   useEffect(() => {
+    if (matrixIntervalRef.current) {
+      window.clearInterval(matrixIntervalRef.current);
+      matrixIntervalRef.current = null;
+    }
+
+    if (!revealed) {
+      const updateGlyphs = () => setMatrixString(generateMatrixString(charCount));
+      updateGlyphs();
+      matrixIntervalRef.current = window.setInterval(updateGlyphs, 120);
+      return () => {
+        if (matrixIntervalRef.current) {
+          window.clearInterval(matrixIntervalRef.current);
+          matrixIntervalRef.current = null;
+        }
+      };
+    }
+
+    setMatrixString(generateMatrixString(charCount));
+    return undefined;
+  }, [revealed, charCount]);
+
+  useEffect(() => {
+    if (!revealed) {
+      if (valueIntervalRef.current) {
+        window.clearInterval(valueIntervalRef.current);
+        valueIntervalRef.current = null;
+      }
+      setIsAnimating(false);
+      setDirection("steady");
+      setDisplayValue(value);
+      prevValueRef.current = value;
+      return;
+    }
+
     if (trigger === undefined) {
       setDisplayValue(value);
       prevValueRef.current = value;
@@ -724,8 +797,9 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
       setDirection("steady");
     }
 
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
+    if (valueIntervalRef.current) {
+      window.clearInterval(valueIntervalRef.current);
+      valueIntervalRef.current = null;
     }
 
     setIsAnimating(true);
@@ -734,11 +808,11 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
     const steps = Math.max(1, Math.abs(Math.round(diff)));
     const intervalDuration = Math.max(24, Math.min(75, 260 / steps));
 
-    intervalRef.current = window.setInterval(() => {
+    valueIntervalRef.current = window.setInterval(() => {
       if (current === value) {
-        if (intervalRef.current) {
-          window.clearInterval(intervalRef.current);
-          intervalRef.current = null;
+        if (valueIntervalRef.current) {
+          window.clearInterval(valueIntervalRef.current);
+          valueIntervalRef.current = null;
         }
         setIsAnimating(false);
         prevValueRef.current = value;
@@ -753,24 +827,24 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
     }, intervalDuration);
 
     return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (valueIntervalRef.current) {
+        window.clearInterval(valueIntervalRef.current);
+        valueIntervalRef.current = null;
       }
     };
-  }, [value, trigger]);
+  }, [value, trigger, revealed]);
 
   useEffect(() => {
-    if (trigger === undefined) {
+    if (!revealed || trigger === undefined) {
       return;
     }
     const timeout = window.setTimeout(() => setIsAnimating(false), 950);
     return () => window.clearTimeout(timeout);
-  }, [trigger]);
+  }, [trigger, revealed]);
 
   const deltaRounded =
     delta !== undefined && !Number.isNaN(delta) ? Math.round(delta) : undefined;
-  const showDelta = trigger !== undefined && deltaRounded !== undefined;
+  const showDelta = revealed && trigger !== undefined && deltaRounded !== undefined;
   const deltaClass =
     deltaRounded !== undefined && deltaRounded > 0
       ? "text-emerald-500"
@@ -783,6 +857,7 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
       container: "gap-1.5 px-3.5 py-1.5",
       label: "text-[10px] tracking-[0.38em]",
       value: "text-lg",
+      matrix: "text-lg",
       delta: "text-[0.75rem]",
       innerGap: "gap-1.5",
     },
@@ -790,6 +865,7 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
       container: "gap-1 px-2.5 py-1",
       label: "text-[9px] tracking-[0.34em]",
       value: "text-base",
+      matrix: "text-base",
       delta: "text-xs",
       innerGap: "gap-1",
     },
@@ -797,13 +873,20 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
       container: "gap-1.5 px-4 py-1.75",
       label: "text-[10px] tracking-[0.4em]",
       value: "text-xl",
+      matrix: "text-xl",
       delta: "text-sm",
       innerGap: "gap-1.5",
     },
   } as const;
 
-  const { container, label: labelSize, value: valueSize, delta: deltaSize, innerGap } =
-    sizeStyles[size];
+  const {
+    container,
+    label: labelSize,
+    value: valueSize,
+    matrix: matrixSize,
+    delta: deltaSize,
+    innerGap,
+  } = sizeStyles[size];
 
   return (
     <div
@@ -824,11 +907,46 @@ const AnimatedStat = ({ label, value, delta, trigger, size = "default" }: Animat
         {label}:
       </span>
       <div className={cn("flex items-baseline", innerGap)}>
-        <span className={cn("font-semibold text-slate-900 tabular-nums", valueSize)}>
-          {displayValue}
+        <span
+          className="relative inline-flex items-baseline justify-center tabular-nums"
+          style={minWidthStyle}
+        >
+          <span
+            className={cn(
+              "font-semibold text-slate-900 tabular-nums transition-opacity duration-200 ease-out",
+              valueSize,
+              revealed ? "opacity-100" : "opacity-0"
+            )}
+            style={minWidthStyle}
+            aria-hidden={!revealed}
+          >
+            {displayValue}
+          </span>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "vote-matrix absolute inset-0 flex items-center justify-center transition-opacity duration-200 ease-out",
+              matrixSize,
+              revealed ? "opacity-0 pointer-events-none" : "opacity-100"
+            )}
+            style={minWidthStyle}
+          >
+            {Array.from(matrixString).map((char, idx) => (
+              <span
+                key={`${char}-${idx}`}
+                className="vote-matrix__char"
+                style={{ animationDelay: `${idx * 0.08}s` }}
+              >
+                {char}
+              </span>
+            ))}
+          </span>
+          {!revealed && (
+            <span className="sr-only">{`${label} hidden until a winner is selected.`}</span>
+          )}
         </span>
         {showDelta && (
-          <span className={cn("font-semibold tabular-nums", deltaSize, deltaClass)}>
+          <span className={cn("font-semibold tabular-nums transition-opacity duration-200", deltaSize, deltaClass)}>
             {deltaRounded !== undefined
               ? deltaRounded > 0
                 ? `+${deltaRounded}`
