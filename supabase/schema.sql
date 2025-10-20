@@ -485,8 +485,8 @@ begin
   new_a := a_rating + k_factor * (score_a - exp_a);
   new_b := b_rating + k_factor * (score_b - exp_b);
 
-  new_a := least(2200, greatest(800, new_a));
-  new_b := least(2200, greatest(800, new_b));
+  new_a := least(3100, greatest(800, new_a));
+  new_b := least(3100, greatest(800, new_b));
 
   a_cap := null;
   b_cap := null;
