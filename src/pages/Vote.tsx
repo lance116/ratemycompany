@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Github, Linkedin, Trophy, Twitter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
+import { getEloTier } from "@/lib/elo";
 import {
   fetchVoteMatchup,
   recordMatchup,
@@ -544,6 +546,7 @@ const CompanyCard = ({
   const logoSrc = company.logoUrl ?? "/placeholder.svg";
   const [wasTouched, setWasTouched] = useState(false);
   const sizeVariant = layout.isCompact ? "compact" : layout.isTablet ? "tablet" : "default";
+  const tierLabel = getEloTier(company.elo);
 
   useEffect(() => {
     setWasTouched(false);
@@ -632,6 +635,7 @@ const CompanyCard = ({
             >
               {company.name}
             </h2>
+            <TierBadge label={tierLabel} />
 
             <div
               className={cn(

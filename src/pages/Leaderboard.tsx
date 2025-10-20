@@ -4,10 +4,12 @@ import { fetchLeaderboardCompanies, LeaderboardCompany } from "@/data/companies"
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PayStats } from "@/components/ui/pay-stats";
+import { TierBadge } from "@/components/ui/tier-badge";
 import { Star, Trophy, Medal, Award, Search as SearchIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import SiteFooter from "@/components/SiteFooter";
+import { getEloTier } from "@/lib/elo";
 
 const defaultLogo = "https://placehold.co/120x120?text=Logo";
 
@@ -124,6 +126,7 @@ const Leaderboard = () => {
       cardHeightClass = "",
       logoBoxClass = "h-24 w-24",
     } = options ?? {};
+    const tierLabel = getEloTier(company.elo);
 
     return (
       <Link
@@ -178,9 +181,12 @@ const Leaderboard = () => {
                 />
               </div>
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-foreground h-14 flex items-center justify-center">
-                  {company.name}
-                </h3>
+                <div className="flex flex-col items-center gap-1">
+                  <h3 className="text-lg font-bold text-foreground h-14 flex items-center justify-center">
+                    {company.name}
+                  </h3>
+                  <TierBadge label={tierLabel} />
+                </div>
                 <div className="h-12 flex items-center justify-center">
                   <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-3 text-sm">
                     <div className="flex items-center gap-1">
@@ -308,11 +314,12 @@ const Leaderboard = () => {
               {rest.map((company, index) => {
                 const rank = index + 4;
                 const logo = company.logoUrl ?? defaultLogo;
-                const reviewRating =
+              const reviewRating =
                   company.averageReviewScore !== null ? company.averageReviewScore.toFixed(1) : "N/A";
-                const reviewCountLabel = `${company.reviewCount} review${
+              const reviewCountLabel = `${company.reviewCount} review${
                   company.reviewCount === 1 ? "" : "s"
                 }`;
+                const tierLabel = getEloTier(company.elo);
 
                 return (
                   <Link
@@ -345,7 +352,10 @@ const Leaderboard = () => {
                           </div>
 
                           <div className="flex-grow">
-                            <h3 className="text-xl font-bold text-foreground">{company.name}</h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-xl font-bold text-foreground">{company.name}</h3>
+                              <TierBadge label={tierLabel} />
+                            </div>
                             <p className="text-muted-foreground text-sm mb-2">
                               {company.description || "No description available yet."}
                             </p>
