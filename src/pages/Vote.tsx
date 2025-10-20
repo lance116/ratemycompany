@@ -571,7 +571,8 @@ const CompanyCard = ({
       <div
         className={cn(
           "pointer-events-none absolute inset-0",
-          isWinner && "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.35),transparent_70%)]"
+          isWinner &&
+            "bg-[radial-gradient(circle_at_top,rgba(252,211,77,0.55),rgba(253,224,71,0.18)_55%,transparent_78%)]"
         )}
       />
       <div
