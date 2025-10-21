@@ -13,6 +13,8 @@ import {
   VoteMatchupPayload,
 } from "@/data/companies";
 
+const VOTE_SESSION_STORAGE_KEY = "vote:sessionToken";
+
 type Selection = VoteMatchupCompany["id"] | "draw" | null;
 
 type StatsDelta = {
@@ -89,11 +91,42 @@ const Vote = () => {
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [voteLocked, setVoteLocked] = useState(false);
   const resetTimerRef = useRef<number | null>(null);
+  const [sessionTokenState, setSessionTokenState] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    try {
+      return window.localStorage.getItem(VOTE_SESSION_STORAGE_KEY);
+    } catch {
+      return null;
+    }
+  });
   const queryClient = useQueryClient();
   const layout = useVoteLayout();
   const hcaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY ?? "";
   const captchaRef = useRef<HCaptcha | null>(null);
   const [isCaptchaLoaded, setIsCaptchaLoaded] = useState(false);
+  const sessionTokenRef = useRef<string | null>(sessionTokenState);
+
+  useEffect(() => {
+    sessionTokenRef.current = sessionTokenState;
+  }, [sessionTokenState]);
+
+  const updateSessionToken = useCallback((token: string | null) => {
+    sessionTokenRef.current = token;
+    setSessionTokenState(token);
+    if (typeof window !== "undefined") {
+      try {
+        if (token) {
+          window.localStorage.setItem(VOTE_SESSION_STORAGE_KEY, token);
+        } else {
+          window.localStorage.removeItem(VOTE_SESSION_STORAGE_KEY);
+        }
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }, []);
 
   const handleCaptchaLoad = useCallback(() => {
     setIsCaptchaLoaded(true);
@@ -199,8 +232,11 @@ const Vote = () => {
 
   const voteMutation = useMutation({
     mutationFn: recordMatchup,
-    onSuccess: (rows) => {
+    onSuccess: (result) => {
+      const rows = result.rows;
+      updateSessionToken(result.sessionToken ?? null);
       setMutationError(null);
+      setVoteLocked(false);
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
       rows.forEach((row) => {
         queryClient.invalidateQueries({ queryKey: ["company", row.company_id] });
@@ -318,19 +354,10 @@ const Vote = () => {
       return;
     }
 
+    const [leftCompany, rightCompany] = companies;
+
     setVoteLocked(true);
-
-    let captchaToken: string;
-    try {
-      captchaToken = await requestCaptchaToken();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to verify captcha. Please try again.";
-      setMutationError(message);
-      setVoteLocked(false);
-      return;
-    }
-
+    setMutationError(null);
     setSelection(companyId);
     const now = Date.now();
     setStatTriggers((prev) => ({
@@ -346,15 +373,48 @@ const Vote = () => {
       resetTimerRef.current = null;
     }
 
-    try {
-      await voteMutation.mutateAsync({
-        companyA: leftCompany.id,
-        companyB: rightCompany.id,
-        result,
-        hcaptchaToken: captchaToken,
-      });
-    } catch {
-      // handled in onError
+    let requireCaptcha = !sessionTokenRef.current;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let captchaToken: string | null = null;
+
+      if (requireCaptcha) {
+        try {
+          captchaToken = await requestCaptchaToken();
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Unable to verify captcha. Please try again.";
+          setMutationError(message);
+          setVoteLocked(false);
+          return;
+        }
+      }
+
+      try {
+        await voteMutation.mutateAsync({
+          companyA: leftCompany.id,
+          companyB: rightCompany.id,
+          result,
+          sessionToken: sessionTokenRef.current ?? null,
+          hcaptchaToken: captchaToken,
+        });
+        return;
+      } catch (error) {
+        const err = error as Error & { code?: string };
+        if (err.code === "captcha_required" && !requireCaptcha) {
+          updateSessionToken(null);
+          requireCaptcha = true;
+          setMutationError(null);
+          setVoteLocked(true);
+          continue;
+        }
+
+        const message =
+          err instanceof Error ? err.message : "Unable to record vote. Please try again.";
+        setMutationError(message);
+        setVoteLocked(false);
+        return;
+      }
     }
   };
 
@@ -363,19 +423,10 @@ const Vote = () => {
       return;
     }
 
+    const [leftCompany, rightCompany] = companies;
+
     setVoteLocked(true);
-
-    let captchaToken: string;
-    try {
-      captchaToken = await requestCaptchaToken();
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to verify captcha. Please try again.";
-      setMutationError(message);
-      setVoteLocked(false);
-      return;
-    }
-
+    setMutationError(null);
     setSelection("draw");
     const now = Date.now();
     setStatTriggers((prev) => ({
@@ -389,15 +440,48 @@ const Vote = () => {
       resetTimerRef.current = null;
     }
 
-    try {
-      await voteMutation.mutateAsync({
-        companyA: leftCompany.id,
-        companyB: rightCompany.id,
-        result: "draw",
-        hcaptchaToken: captchaToken,
-      });
-    } catch {
-      // handled in onError
+    let requireCaptcha = !sessionTokenRef.current;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      let captchaToken: string | null = null;
+
+      if (requireCaptcha) {
+        try {
+          captchaToken = await requestCaptchaToken();
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Unable to verify captcha. Please try again.";
+          setMutationError(message);
+          setVoteLocked(false);
+          return;
+        }
+      }
+
+      try {
+        await voteMutation.mutateAsync({
+          companyA: leftCompany.id,
+          companyB: rightCompany.id,
+          result: "draw",
+          sessionToken: sessionTokenRef.current ?? null,
+          hcaptchaToken: captchaToken,
+        });
+        return;
+      } catch (error) {
+        const err = error as Error & { code?: string };
+        if (err.code === "captcha_required" && !requireCaptcha) {
+          updateSessionToken(null);
+          requireCaptcha = true;
+          setMutationError(null);
+          setVoteLocked(true);
+          continue;
+        }
+
+        const message =
+          err instanceof Error ? err.message : "Unable to record vote. Please try again.";
+        setMutationError(message);
+        setVoteLocked(false);
+        return;
+      }
     }
   };
 
