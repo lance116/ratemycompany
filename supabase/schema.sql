@@ -621,7 +621,8 @@ begin
 end;
 $$;
 
-grant execute on function public.record_matchup(uuid, uuid, text, uuid, numeric, inet) to anon, authenticated;
+revoke execute on function public.record_matchup(uuid, uuid, text, uuid, numeric, inet) from public, anon, authenticated;
+grant execute on function public.record_matchup(uuid, uuid, text, uuid, numeric, inet) to service_role;
 
 -- Authentication profile sync -------------------------------------------------
 
