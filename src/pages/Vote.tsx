@@ -106,17 +106,48 @@ const Vote = () => {
     setVoteLocked(false);
   }, []);
 
+  const waitForCaptchaReady = useCallback(async () => {
+    const captcha = captchaRef.current;
+    if (!captcha) {
+      throw new Error("Captcha is unavailable. Please refresh and try again.");
+    }
+
+    if (captcha.isReady()) {
+      setIsCaptchaLoaded(true);
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const start = Date.now();
+      const poll = window.setInterval(() => {
+        const instance = captchaRef.current;
+        if (instance?.isReady()) {
+          window.clearInterval(poll);
+          setIsCaptchaLoaded(true);
+          resolve();
+          return;
+        }
+
+        if (Date.now() - start > 5000) {
+          window.clearInterval(poll);
+          reject(new Error("Captcha is still loading. Please wait a moment and try again."));
+        }
+      }, 150);
+    });
+  }, []);
+
   const requestCaptchaToken = useCallback(async (): Promise<string> => {
     if (!hcaptchaSiteKey) {
       throw new Error("Voting is currently unavailable. Missing captcha configuration.");
     }
 
     const captcha = captchaRef.current;
-    if (!captcha || !isCaptchaLoaded) {
-      throw new Error("Captcha is still loading. Please wait a moment and try again.");
+    if (!captcha) {
+      throw new Error("Captcha is unavailable. Please refresh and try again.");
     }
 
     try {
+      await waitForCaptchaReady();
       const result = await captcha.execute({ async: true });
       const token = result?.response ?? captcha.getResponse();
       if (!token) {
@@ -130,7 +161,7 @@ const Vote = () => {
     } finally {
       captcha.resetCaptcha();
     }
-  }, [hcaptchaSiteKey, isCaptchaLoaded]);
+  }, [hcaptchaSiteKey, waitForCaptchaReady]);
 
   const {
     data,
