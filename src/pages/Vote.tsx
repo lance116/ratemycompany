@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Github, Linkedin, Trophy, Twitter } from "lucide-react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { Button } from "@/components/ui/button";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { cn } from "@/lib/utils";
@@ -90,6 +91,46 @@ const Vote = () => {
   const resetTimerRef = useRef<number | null>(null);
   const queryClient = useQueryClient();
   const layout = useVoteLayout();
+  const hcaptchaSiteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY ?? "";
+  const captchaRef = useRef<HCaptcha | null>(null);
+  const [isCaptchaLoaded, setIsCaptchaLoaded] = useState(false);
+
+  const handleCaptchaLoad = useCallback(() => {
+    setIsCaptchaLoaded(true);
+  }, []);
+
+  const handleCaptchaError = useCallback((err: string) => {
+    console.error("hCaptcha error:", err);
+    setIsCaptchaLoaded(false);
+    setMutationError("Captcha failed to load. Please refresh and try again.");
+    setVoteLocked(false);
+  }, []);
+
+  const requestCaptchaToken = useCallback(async (): Promise<string> => {
+    if (!hcaptchaSiteKey) {
+      throw new Error("Voting is currently unavailable. Missing captcha configuration.");
+    }
+
+    const captcha = captchaRef.current;
+    if (!captcha || !isCaptchaLoaded) {
+      throw new Error("Captcha is still loading. Please wait a moment and try again.");
+    }
+
+    try {
+      const result = await captcha.execute({ async: true });
+      const token = result?.response ?? captcha.getResponse();
+      if (!token) {
+        throw new Error("Unable to verify captcha. Please try again.");
+      }
+      return token;
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : "Unable to verify captcha. Please try again."
+      );
+    } finally {
+      captcha.resetCaptcha();
+    }
+  }, [hcaptchaSiteKey, isCaptchaLoaded]);
 
   const {
     data,
@@ -241,13 +282,25 @@ const Vote = () => {
 
   const [leftCompany, rightCompany] = companies;
 
-  const handleCompanySelect = (companyId: string) => {
+  const handleCompanySelect = async (companyId: string) => {
     if (!companies || voteMutation.isPending || voteLocked) {
       return;
     }
 
-    setSelection(companyId);
     setVoteLocked(true);
+
+    let captchaToken: string;
+    try {
+      captchaToken = await requestCaptchaToken();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to verify captcha. Please try again.";
+      setMutationError(message);
+      setVoteLocked(false);
+      return;
+    }
+
+    setSelection(companyId);
     const now = Date.now();
     setStatTriggers((prev) => ({
       ...prev,
@@ -262,20 +315,37 @@ const Vote = () => {
       resetTimerRef.current = null;
     }
 
-    voteMutation.mutate({
+    try {
+      await voteMutation.mutateAsync({
         companyA: leftCompany.id,
         companyB: rightCompany.id,
-      result,
-    });
+        result,
+        hcaptchaToken: captchaToken,
+      });
+    } catch {
+      // handled in onError
+    }
   };
 
-  const handleDraw = () => {
+  const handleDraw = async () => {
     if (!companies || voteMutation.isPending || voteLocked) {
       return;
     }
 
-    setSelection("draw");
     setVoteLocked(true);
+
+    let captchaToken: string;
+    try {
+      captchaToken = await requestCaptchaToken();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to verify captcha. Please try again.";
+      setMutationError(message);
+      setVoteLocked(false);
+      return;
+    }
+
+    setSelection("draw");
     const now = Date.now();
     setStatTriggers((prev) => ({
       ...prev,
@@ -288,11 +358,16 @@ const Vote = () => {
       resetTimerRef.current = null;
     }
 
-    voteMutation.mutate({
-      companyA: leftCompany.id,
-      companyB: rightCompany.id,
-      result: "draw",
-    });
+    try {
+      await voteMutation.mutateAsync({
+        companyA: leftCompany.id,
+        companyB: rightCompany.id,
+        result: "draw",
+        hcaptchaToken: captchaToken,
+      });
+    } catch {
+      // handled in onError
+    }
   };
 
   const handleSkip = async () => {
@@ -320,6 +395,16 @@ const Vote = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
+      {hcaptchaSiteKey && (
+        <HCaptcha
+          ref={captchaRef}
+          sitekey={hcaptchaSiteKey}
+          size="invisible"
+          onLoad={handleCaptchaLoad}
+          onError={handleCaptchaError}
+          onOpen={() => setMutationError(null)}
+        />
+      )}
       <BackgroundCanvas />
       <div
         className={cn(

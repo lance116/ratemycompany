@@ -284,19 +284,42 @@ export const recordMatchup = async (params: {
   companyB: string;
   result: "a" | "b" | "draw";
   submittedBy?: string | null;
+  hcaptchaToken: string;
 }): Promise<RecordMatchupResponseRow[]> => {
-  const { data, error } = await supabase.rpc("record_matchup", {
-    company_a: params.companyA,
-    company_b: params.companyB,
-    result: params.result,
-    submitted_by: params.submittedBy ?? null,
-  });
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
+  const configuredFunctionUrl = import.meta.env.VITE_SUPABASE_FUNCTION_URL ?? "";
+  const baseFunctionUrl =
+    configuredFunctionUrl.trim().replace(/\/$/, "") ||
+    (supabaseUrl ? supabaseUrl.replace(".supabase.co", ".functions.supabase.co") : "");
 
-  if (error) {
-    throw new Error(error.message);
+  if (!baseFunctionUrl) {
+    throw new Error("Voting is temporarily unavailable. Please try again later.");
   }
 
-  return data ?? [];
+  const response = await fetch(`${baseFunctionUrl}/vote`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      companyA: params.companyA,
+      companyB: params.companyB,
+      result: params.result,
+      submittedBy: params.submittedBy ?? null,
+      hcaptchaToken: params.hcaptchaToken,
+    }),
+  });
+
+  const body = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      (body && typeof body.error === "string" && body.error) ||
+      "Failed to record vote.";
+    throw new Error(message);
+  }
+
+  return Array.isArray(body?.data) ? (body.data as RecordMatchupResponseRow[]) : [];
 };
 
 export const fetchVoteMatchup = async (): Promise<VoteMatchupPayload> => {
