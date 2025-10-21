@@ -64,6 +64,11 @@ export interface RecordMatchupResponseRow {
   rank: number | null;
 }
 
+export interface RecordMatchupResult {
+  rows: RecordMatchupResponseRow[];
+  sessionToken: string | null;
+}
+
 export interface VoteMatchupCompany {
   id: string;
   name: string;
@@ -284,8 +289,9 @@ export const recordMatchup = async (params: {
   companyB: string;
   result: "a" | "b" | "draw";
   submittedBy?: string | null;
-  hcaptchaToken: string;
-}): Promise<RecordMatchupResponseRow[]> => {
+  hcaptchaToken?: string | null;
+  sessionToken?: string | null;
+}): Promise<RecordMatchupResult> => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
   const configuredFunctionUrl = import.meta.env.VITE_SUPABASE_FUNCTION_URL ?? "";
   const baseFunctionUrl =
@@ -306,7 +312,8 @@ export const recordMatchup = async (params: {
       companyB: params.companyB,
       result: params.result,
       submittedBy: params.submittedBy ?? null,
-      hcaptchaToken: params.hcaptchaToken,
+      hcaptchaToken: params.hcaptchaToken ?? null,
+      sessionToken: params.sessionToken ?? null,
     }),
   });
 
@@ -316,10 +323,25 @@ export const recordMatchup = async (params: {
     const message =
       (body && typeof body.error === "string" && body.error) ||
       "Failed to record vote.";
-    throw new Error(message);
+    const error = new Error(message);
+    if (body && typeof body.errorCode === "string") {
+      (error as Error & { code?: string }).code = body.errorCode;
+    }
+    throw error;
   }
 
-  return Array.isArray(body?.data) ? (body.data as RecordMatchupResponseRow[]) : [];
+  const rows = Array.isArray(body?.data)
+    ? (body.data as RecordMatchupResponseRow[])
+    : [];
+  const sessionToken =
+    typeof body?.sessionToken === "string" && body.sessionToken.trim().length > 0
+      ? body.sessionToken
+      : null;
+
+  return {
+    rows,
+    sessionToken,
+  };
 };
 
 export const fetchVoteMatchup = async (): Promise<VoteMatchupPayload> => {

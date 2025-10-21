@@ -6,14 +6,26 @@ interface VoteRequestPayload {
   companyB?: string;
   result?: "a" | "b" | "draw";
   submittedBy?: string | null;
-  hcaptchaToken?: string;
+  hcaptchaToken?: string | null;
+  sessionToken?: string | null;
 }
+
+type SessionContext = {
+  ip: string | null;
+  submitter: string | null;
+};
+
+type SessionPayload = {
+  exp: number;
+  ip: string | null;
+  sub: string | null;
+};
 
 const resolveEnv = (...keys: string[]) => {
   for (const key of keys) {
     const value = Deno.env.get(key);
     if (typeof value === "string" && value.trim().length > 0) {
-      return value;
+      return value.trim();
     }
   }
   return null;
@@ -26,6 +38,11 @@ const ALLOWED_ORIGINS = (resolveEnv("ALLOWED_VOTE_ORIGINS") ?? "")
   .split(",")
   .map(origin => origin.trim())
   .filter(origin => origin.length > 0);
+const SESSION_SECRET = resolveEnv("VOTE_SESSION_SECRET");
+const SESSION_TTL_SECONDS =
+  Number.parseInt(resolveEnv("VOTE_SESSION_TTL") ?? "", 10) > 0
+    ? Number.parseInt(resolveEnv("VOTE_SESSION_TTL") ?? "", 10)
+    : 3600;
 
 if (!SUPABASE_URL) {
   console.warn("Missing SUPABASE_URL environment variable");
@@ -38,6 +55,15 @@ if (!SERVICE_ROLE_KEY) {
 if (!HCAPTCHA_SECRET) {
   console.warn("Missing HCAPTCHA_SECRET_KEY environment variable");
 }
+
+if (!SESSION_SECRET) {
+  console.warn(
+    "Missing VOTE_SESSION_SECRET environment variable. Captcha will be required for every vote."
+  );
+}
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 const buildCorsHeaders = (origin: string | null) => {
   const allowedOrigin =
@@ -55,10 +81,10 @@ const buildCorsHeaders = (origin: string | null) => {
 
 const jsonResponse = (
   status: number,
-  body: Record<string, unknown>,
+  body: Record<string, unknown> | null,
   origin: string | null
 ) =>
-  new Response(JSON.stringify(body), {
+  new Response(JSON.stringify(body ?? {}), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
@@ -69,10 +95,6 @@ const jsonResponse = (
 const validatePayload = (payload: VoteRequestPayload) => {
   if (!payload) {
     return "Missing request body.";
-  }
-
-  if (!payload.hcaptchaToken) {
-    return "Missing hCaptcha token.";
   }
 
   if (!payload.companyA || !payload.companyB) {
@@ -145,6 +167,124 @@ const supabaseAdminClient =
       })
     : null;
 
+const base64UrlEncode = (bytes: Uint8Array) =>
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+
+const base64UrlDecode = (value: string) => {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+let sessionKeyPromise: Promise<CryptoKey | null> | null = null;
+
+const getSessionKey = (): Promise<CryptoKey | null> => {
+  if (!SESSION_SECRET) {
+    return Promise.resolve(null);
+  }
+
+  if (!sessionKeyPromise) {
+    sessionKeyPromise = crypto.subtle
+      .importKey(
+        "raw",
+        encoder.encode(SESSION_SECRET),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign", "verify"]
+      )
+      .catch(() => null);
+  }
+
+  return sessionKeyPromise;
+};
+
+const createSessionToken = async (context: SessionContext): Promise<string | null> => {
+  const key = await getSessionKey();
+  if (!key) {
+    return null;
+  }
+
+  const payload: SessionPayload = {
+    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    ip: context.ip ?? null,
+    sub: context.submitter ?? null,
+  };
+
+  const payloadBytes = encoder.encode(JSON.stringify(payload));
+  const payloadPart = base64UrlEncode(payloadBytes);
+
+  const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payloadPart));
+  const signature = base64UrlEncode(new Uint8Array(signatureBuffer));
+
+  return `${payloadPart}.${signature}`;
+};
+
+const verifySessionToken = async (
+  token: string,
+  context: SessionContext
+): Promise<boolean> => {
+  if (!token) {
+    return false;
+  }
+
+  const key = await getSessionKey();
+  if (!key) {
+    return false;
+  }
+
+  const parts = token.split(".");
+  if (parts.length !== 2) {
+    return false;
+  }
+
+  const [payloadPart, signaturePart] = parts;
+  const signatureBytes = base64UrlDecode(signaturePart);
+
+  const isValidSignature = await crypto.subtle.verify(
+    "HMAC",
+    key,
+    signatureBytes,
+    encoder.encode(payloadPart)
+  );
+
+  if (!isValidSignature) {
+    return false;
+  }
+
+  let payload: SessionPayload | null = null;
+  try {
+    payload = JSON.parse(decoder.decode(base64UrlDecode(payloadPart))) as SessionPayload;
+  } catch (_error) {
+    return false;
+  }
+
+  if (
+    !payload ||
+    typeof payload.exp !== "number" ||
+    payload.exp < Math.floor(Date.now() / 1000)
+  ) {
+    return false;
+  }
+
+  if (payload.ip && context.ip && payload.ip !== context.ip) {
+    return false;
+  }
+
+  if (payload.sub && context.submitter && payload.sub !== context.submitter) {
+    return false;
+  }
+
+  return true;
+};
+
 serve(async req => {
   const origin = req.headers.get("origin");
 
@@ -187,9 +327,48 @@ serve(async req => {
     req.headers.get("cf-connecting-ip") ??
     null;
 
-  const captchaResult = await verifyHCaptcha(payload.hcaptchaToken!, remoteIp);
-  if (!captchaResult.ok) {
-    return jsonResponse(403, { error: captchaResult.error }, origin);
+  const sessionContext: SessionContext = {
+    ip: remoteIp,
+    submitter: payload.submittedBy ?? null,
+  };
+
+  let sessionValidated = false;
+
+  const incomingSessionToken = (payload.sessionToken ?? "").trim();
+  if (incomingSessionToken) {
+    try {
+      sessionValidated = await verifySessionToken(incomingSessionToken, sessionContext);
+    } catch (_error) {
+      sessionValidated = false;
+    }
+  }
+
+  if (!sessionValidated) {
+    const captchaToken = (payload.hcaptchaToken ?? "").trim();
+    if (!captchaToken) {
+      return jsonResponse(
+        403,
+        {
+          error: "Captcha verification required.",
+          errorCode: "captcha_required",
+        },
+        origin
+      );
+    }
+
+    const captchaResult = await verifyHCaptcha(captchaToken, remoteIp);
+    if (!captchaResult.ok) {
+      return jsonResponse(
+        403,
+        {
+          error: captchaResult.error,
+          errorCode: "captcha_failed",
+        },
+        origin
+      );
+    }
+
+    sessionValidated = true;
   }
 
   const { companyA, companyB, result, submittedBy = null } = payload;
@@ -206,5 +385,21 @@ serve(async req => {
     return jsonResponse(500, { error: "Failed to record vote." }, origin);
   }
 
-  return jsonResponse(200, { data: data ?? [] }, origin);
+  let nextSessionToken: string | null = null;
+  if (sessionValidated) {
+    try {
+      nextSessionToken = await createSessionToken(sessionContext);
+    } catch (_error) {
+      nextSessionToken = null;
+    }
+  }
+
+  return jsonResponse(
+    200,
+    {
+      data: data ?? [],
+      sessionToken: nextSessionToken,
+    },
+    origin
+  );
 });
