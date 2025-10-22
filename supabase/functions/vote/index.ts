@@ -65,11 +65,25 @@ if (!SESSION_SECRET) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+const isAllowedOrigin = (origin: string | null) => {
+  if (!origin || origin.trim().length === 0) {
+    return false;
+  }
+
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+
+  if (origin === "http://localhost:8080") {
+    return true;
+  }
+
+  return false;
+};
+
 const buildCorsHeaders = (origin: string | null) => {
   const allowedOrigin =
-    (origin && ALLOWED_ORIGINS.includes(origin) && origin) ||
-    ALLOWED_ORIGINS[0] ||
-    "*";
+    (origin && isAllowedOrigin(origin) && origin) || ALLOWED_ORIGINS[0] || "*";
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
