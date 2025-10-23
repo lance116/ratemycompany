@@ -1,10 +1,4 @@
--- Tighten vote rate limiting and capture client IPs when recording matchups
-
-create index if not exists matchups_ip_created_at_idx
-  on public.matchups (ip_address, created_at desc);
-
-create index if not exists matchups_submitted_by_created_at_idx
-  on public.matchups (submitted_by, created_at desc);
+-- Reapply record_matchup with explicit parameter aliases to avoid ambiguity
 
 create or replace function public.record_matchup(
   company_a uuid,
