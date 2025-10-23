@@ -336,13 +336,17 @@ serve(async req => {
     return jsonResponse(400, { error: validationError }, origin);
   }
 
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  const primaryForwardedIp = forwardedFor?.split(",")[0]?.trim() ?? null;
+  const cfConnectingIp = req.headers.get("cf-connecting-ip")?.trim() ?? null;
   const remoteIp =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-    req.headers.get("cf-connecting-ip") ??
-    null;
+    (primaryForwardedIp && primaryForwardedIp.length > 0
+      ? primaryForwardedIp
+      : cfConnectingIp) ?? null;
+  const normalizedIp = remoteIp && remoteIp.length > 0 ? remoteIp : "0.0.0.0";
 
   const sessionContext: SessionContext = {
-    ip: remoteIp,
+    ip: normalizedIp,
     submitter: payload.submittedBy ?? null,
   };
 
@@ -392,11 +396,28 @@ serve(async req => {
     company_b: companyB,
     result,
     submitted_by: submittedBy,
+    voter_ip: normalizedIp,
   });
 
   if (error) {
     console.error("record_matchup error:", error);
-    return jsonResponse(500, { error: "Failed to record vote." }, origin);
+    const errorMessage =
+      typeof error.message === "string" && error.message.trim().length > 0
+        ? error.message
+        : "Failed to record vote.";
+    const normalizedMessage = errorMessage.toLowerCase();
+    const isRateLimited =
+      normalizedMessage.includes("too many votes") ||
+      normalizedMessage.includes("vote limit") ||
+      normalizedMessage.includes("draw limit");
+    return jsonResponse(
+      isRateLimited ? 429 : 500,
+      {
+        error: errorMessage,
+        errorCode: isRateLimited ? "rate_limited" : "vote_failed",
+      },
+      origin
+    );
   }
 
   let nextSessionToken: string | null = null;
