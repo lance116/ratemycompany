@@ -51,6 +51,12 @@ alter table public.matchups
   alter column ip_address type inet using ip_address::inet,
   alter column ip_address set default null;
 
+create index if not exists matchups_ip_created_at_idx
+  on public.matchups (ip_address, created_at desc);
+
+create index if not exists matchups_submitted_by_created_at_idx
+  on public.matchups (submitted_by, created_at desc);
+
 create table if not exists public.draw_violation_logs (
   id bigserial primary key,
   ip_address inet,
@@ -381,6 +387,10 @@ declare
   ip_input inet := voter_ip;
   draw_streak integer := 0;
   forwarded_header text;
+  effective_k numeric := greatest(1, least(32, coalesce(k_factor, 32)));
+  ip_recent_votes integer := 0;
+  ip_company_recent integer := 0;
+  submitter_recent integer := 0;
 begin
   if company_a = company_b then
     raise exception 'company_a and company_b must be different companies';
@@ -402,6 +412,43 @@ begin
       when others then
         ip_input := null;
     end;
+  end if;
+
+  if ip_input is not null then
+    select count(*) into ip_recent_votes
+    from public.matchups m
+    where m.ip_address = ip_input
+      and m.created_at > now() - interval '10 minutes';
+
+    if ip_recent_votes >= 12 then
+      raise exception 'Too many votes from this IP in a short period. Please wait before voting again.';
+    end if;
+
+    select count(*) into ip_company_recent
+    from public.matchups m
+    where m.ip_address = ip_input
+      and m.created_at > now() - interval '24 hours'
+      and (
+        m.company_a = company_a
+        or m.company_b = company_a
+        or m.company_a = company_b
+        or m.company_b = company_b
+      );
+
+    if ip_company_recent >= 6 then
+      raise exception 'Daily vote limit reached for one of these companies from this IP. Please try again tomorrow.';
+    end if;
+  end if;
+
+  if submitter is not null then
+    select count(*) into submitter_recent
+    from public.matchups m
+    where m.submitted_by = submitter
+      and m.created_at > now() - interval '6 hours';
+
+    if submitter_recent >= 15 then
+      raise exception 'Account vote limit reached. Please wait before voting again.';
+    end if;
   end if;
 
   if (
@@ -468,6 +515,22 @@ begin
   where ce.company_id = company_b
   for update of ce;
 
+  if greatest(a_rating, b_rating) >= 2200 then
+    effective_k := least(effective_k, 12);
+  end if;
+
+  if greatest(a_rating, b_rating) >= 2400 then
+    effective_k := least(effective_k, 8);
+  end if;
+
+  if greatest(a_rating, b_rating) >= 2600 then
+    effective_k := least(effective_k, 6);
+  end if;
+
+  if greatest(a_rating, b_rating) >= 2800 then
+    effective_k := least(effective_k, 4);
+  end if;
+
   exp_a := 1 / (1 + power(10, (b_rating - a_rating) / 400));
   exp_b := 1 / (1 + power(10, (a_rating - b_rating) / 400));
 
@@ -482,8 +545,8 @@ begin
     score_b := 1;
   end if;
 
-  new_a := a_rating + k_factor * (score_a - exp_a);
-  new_b := b_rating + k_factor * (score_b - exp_b);
+  new_a := a_rating + effective_k * (score_a - exp_a);
+  new_b := b_rating + effective_k * (score_b - exp_b);
 
   new_a := least(3100, greatest(800, new_a));
   new_b := least(3100, greatest(800, new_b));
