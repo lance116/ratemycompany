@@ -306,6 +306,7 @@ export const recordMatchup = async (params: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? "",
     },
     body: JSON.stringify({
       companyA: params.companyA,
@@ -320,13 +321,20 @@ export const recordMatchup = async (params: {
   const body = await response.json().catch(() => null);
 
   if (!response.ok) {
+    console.error("recordMatchup request failed", {
+      status: response.status,
+      statusText: response.statusText,
+      body,
+    });
     const message =
       (body && typeof body.error === "string" && body.error) ||
-      "Failed to record vote.";
+      `Failed to record vote (status ${response.status}).`;
     const error = new Error(message);
     if (body && typeof body.errorCode === "string") {
       (error as Error & { code?: string }).code = body.errorCode;
     }
+    (error as Error & { status?: number }).status = response.status;
+    (error as Error & { details?: unknown }).details = body;
     throw error;
   }
 
