@@ -65,6 +65,15 @@ if (!SESSION_SECRET) {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+const isLocalhostOrigin = (origin: string) => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch (_error) {
+    return false;
+  }
+};
+
 const isAllowedOrigin = (origin: string | null) => {
   if (!origin || origin.trim().length === 0) {
     return false;
@@ -78,6 +87,10 @@ const isAllowedOrigin = (origin: string | null) => {
     return true;
   }
 
+  if (isLocalhostOrigin(origin)) {
+    return true;
+  }
+
   return false;
 };
 
@@ -88,7 +101,7 @@ const buildCorsHeaders = (origin: string | null) => {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
     "Access-Control-Max-Age": "86400",
   };
 };
