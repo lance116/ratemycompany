@@ -368,6 +368,8 @@ security definer
 set search_path = public
 as $$
 declare
+  company_a_id uuid := company_a;
+  company_b_id uuid := company_b;
   a_rating numeric;
   b_rating numeric;
   a_slug text;
@@ -392,7 +394,7 @@ declare
   ip_company_recent integer := 0;
   submitter_recent integer := 0;
 begin
-  if company_a = company_b then
+  if company_a_id = company_b_id then
     raise exception 'company_a and company_b must be different companies';
   end if;
 
@@ -429,10 +431,10 @@ begin
     where m.ip_address = ip_input
       and m.created_at > now() - interval '24 hours'
       and (
-        m.company_a = company_a
-        or m.company_b = company_a
-        or m.company_a = company_b
-        or m.company_b = company_b
+        m.company_a = company_a_id
+        or m.company_b = company_a_id
+        or m.company_a = company_b_id
+        or m.company_b = company_b_id
       );
 
     if ip_company_recent >= 6 then
@@ -456,19 +458,19 @@ begin
     from public.matchups m
     where m.created_at > now() - interval '90 seconds'
       and (
-        m.company_a in (company_a, company_b)
-        or m.company_b in (company_a, company_b)
+        m.company_a in (company_a_id, company_b_id)
+        or m.company_b in (company_a_id, company_b_id)
       )
   ) >= 40 then
     raise exception 'Too many recent votes for this matchup. Please try again later.';
   end if;
 
   insert into public.company_elo (company_id)
-    values (company_a)
+    values (company_a_id)
     on conflict on constraint company_elo_pkey do nothing;
 
   insert into public.company_elo (company_id)
-    values (company_b)
+    values (company_b_id)
     on conflict on constraint company_elo_pkey do nothing;
 
   if result = 'draw' then
@@ -496,7 +498,7 @@ begin
 
     if draw_streak = 2 then
       insert into public.draw_violation_logs (ip_address, submitter, company_a, company_b, violation_count)
-      values (ip_input, submitter, company_a, company_b, draw_streak + 1);
+      values (ip_input, submitter, company_a_id, company_b_id, draw_streak + 1);
       raise exception 'Draw limit reached for this IP. Please choose a winner.';
     end if;
   end if;
@@ -505,14 +507,14 @@ begin
   into a_rating, a_slug, a_name
   from public.company_elo ce
   join public.companies c on c.id = ce.company_id
-  where ce.company_id = company_a
+  where ce.company_id = company_a_id
   for update of ce;
 
   select ce.rating, lower(c.slug), lower(c.name)
   into b_rating, b_slug, b_name
   from public.company_elo ce
   join public.companies c on c.id = ce.company_id
-  where ce.company_id = company_b
+  where ce.company_id = company_b_id
   for update of ce;
 
   if greatest(a_rating, b_rating) >= 2200 then
@@ -585,7 +587,7 @@ begin
         losses = ce.losses + case when result = 'b' then 1 else 0 end,
         draws = ce.draws + case when result = 'draw' then 1 else 0 end,
         updated_at = now()
-    where ce.company_id = company_a;
+    where ce.company_id = company_a_id;
 
   update public.company_elo as ce
     set rating = new_b,
@@ -594,7 +596,7 @@ begin
         losses = ce.losses + case when result = 'a' then 1 else 0 end,
         draws = ce.draws + case when result = 'draw' then 1 else 0 end,
         updated_at = now()
-    where ce.company_id = company_b;
+    where ce.company_id = company_b_id;
 
   insert into public.matchups (
     company_a,
@@ -608,8 +610,8 @@ begin
     ip_address
   )
   values (
-    company_a,
-    company_b,
+    company_a_id,
+    company_b_id,
     result,
     a_rating,
     b_rating,
@@ -628,9 +630,9 @@ begin
     join public.company_elo ce on ce.company_id = c.id
   ),
   updated as (
-    select company_a as company_id, new_a as rating
+    select company_a_id as company_id, new_a as rating
     union all
-    select company_b as company_id, new_b as rating
+    select company_b_id as company_id, new_b as rating
   )
   insert into public.elo_history (company_id, matchup_id, rating, rank)
   select u.company_id, matchup_id, u.rating, r.rank
@@ -654,7 +656,7 @@ begin
     from public.companies c
     join public.company_elo ce on ce.company_id = c.id
   ) ranks on ranks.id = ce.company_id
-  where ce.company_id in (company_a, company_b);
+  where ce.company_id in (company_a_id, company_b_id);
 end;
 $$;
 
