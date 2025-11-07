@@ -509,21 +509,24 @@ begin
   where ce.company_id = company_b_id
   for update of ce;
 
-  if greatest(a_rating, b_rating) >= 2200 then
-    effective_k := least(effective_k, 12);
-  end if;
+  -- Adjusted K-factors more in line with chess
+  -- Chess: K=40 for new players, K=20 for active, K=10 for 2400+
+  -- We use: K=32 default, gradually reduce but never below K=10
 
   if greatest(a_rating, b_rating) >= 2400 then
-    effective_k := least(effective_k, 8);
+    effective_k := least(effective_k, 16);
   end if;
 
   if greatest(a_rating, b_rating) >= 2600 then
-    effective_k := least(effective_k, 6);
+    effective_k := least(effective_k, 12);
   end if;
 
   if greatest(a_rating, b_rating) >= 2800 then
-    effective_k := least(effective_k, 4);
+    effective_k := least(effective_k, 10);
   end if;
+
+  -- Never drop below K=10 (chess minimum)
+  effective_k := greatest(effective_k, 10);
 
   exp_a := 1 / (1 + power(10, (b_rating - a_rating) / 400));
   exp_b := 1 / (1 + power(10, (a_rating - b_rating) / 400));

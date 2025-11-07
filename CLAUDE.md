@@ -198,12 +198,12 @@ record_matchup(
 2. **Elo Calculation Algorithm**:
    - Standard Elo formula: `new_rating = old_rating + K * (actual - expected)`
    - Expected score: `1 / (1 + 10^((opponent_rating - player_rating) / 400))`
-   - **Dynamic K-factor**:
+   - **Dynamic K-factor** (aligned with chess ratings):
      - Default: 32
-     - 2200+: K=12
-     - 2400+: K=8
-     - 2600+: K=6
-     - 2800+: K=4
+     - 2400+: K=16
+     - 2600+: K=12
+     - 2800+: K=10
+     - **Minimum: K=10** (never drops below chess minimum)
    - **Rating caps**:
      - Global: 800 min, 3100 max
      - All companies follow the same rules (no company-specific caps)
@@ -966,6 +966,13 @@ SUPABASE_SERVICE_ROLE_KEY=<auto_provided>
    - Removed company-specific Elo caps for Tesla, Tata, and Walmart
    - All companies now follow the same rating rules (800-3100 range)
    - Simplified record_matchup function by removing cap logic
+
+8. **20251107100000_adjust_k_factors.sql**
+   - Adjusted K-factors to align with chess rating system
+   - Removed overly aggressive K-factor reduction at high ratings
+   - Changed from K=4 minimum to K=10 minimum (chess standard)
+   - New thresholds: 2400+ (K=16), 2600+ (K=12), 2800+ (K=10)
+   - Makes rating changes more meaningful and responsive
 
 **Current Schema**: `supabase/schema.sql` (complete schema export)
 
