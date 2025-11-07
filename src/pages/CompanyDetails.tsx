@@ -206,70 +206,7 @@ const CompanyDetails = () => {
     [chartHistory]
   );
 
-  const ratingLimits = useMemo(() => {
-    if (!company) {
-      return null;
-    }
-
-    const slug = (company.slug ?? "").toLowerCase();
-    const name = (company.name ?? "").toLowerCase();
-    const floor = 800;
-    let ceiling = 3100;
-
-    const applyCap = (cap: number) => {
-      ceiling = Math.min(ceiling, cap);
-    };
-
-    if (slug.includes("tesla") || name.includes("tesla")) {
-      applyCap(1700);
-    }
-    if (slug.includes("tata") || name.includes("tata")) {
-      applyCap(1300);
-    }
-    if (slug.includes("walmart") || name.includes("walmart")) {
-      applyCap(1300);
-    }
-
-    return {
-      floor,
-      ceiling,
-      hasCustomCap: ceiling < 3100,
-    };
-  }, [company]);
-
-  const ratingReferenceLines = useMemo(() => {
-    if (!ratingLimits || !ratingLimits.hasCustomCap) {
-      return [];
-    }
-
-    return [
-      {
-        value: ratingLimits.floor,
-        label: `Floor (${ratingLimits.floor})`,
-        color: "hsl(var(--destructive))",
-        dashed: true,
-        align: "left" as const,
-      },
-      {
-        value: ratingLimits.ceiling,
-        label: `Cap (${ratingLimits.ceiling})`,
-        color: "hsl(var(--primary))",
-        dashed: true,
-        align: "left" as const,
-      },
-    ];
-  }, [ratingLimits]);
-
-  const ratingBounds = useMemo(() => {
-    if (!ratingLimits || !ratingLimits.hasCustomCap) {
-      return undefined;
-    }
-
-    return {
-      min: ratingLimits.floor,
-      max: ratingLimits.ceiling,
-    };
-  }, [ratingLimits]);
+  // No custom rating limits - all companies follow the same rules (800-3100)
 
   const rankHistoryData = useMemo(() => {
     const rankedEntries = chartHistory.filter(
@@ -529,8 +466,6 @@ const CompanyDetails = () => {
                 width={600}
                 height={280}
                 className="mx-auto"
-                referenceLines={ratingReferenceLines}
-                yBounds={ratingBounds}
               />
             )}
           </CardContent>

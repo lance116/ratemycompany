@@ -372,12 +372,6 @@ declare
   company_b_id uuid := company_b;
   a_rating numeric;
   b_rating numeric;
-  a_slug text;
-  b_slug text;
-  a_name text;
-  b_name text;
-  a_cap numeric;
-  b_cap numeric;
   exp_a numeric;
   exp_b numeric;
   score_a numeric;
@@ -503,17 +497,15 @@ begin
     end if;
   end if;
 
-  select ce.rating, lower(c.slug), lower(c.name)
-  into a_rating, a_slug, a_name
+  select ce.rating
+  into a_rating
   from public.company_elo ce
-  join public.companies c on c.id = ce.company_id
   where ce.company_id = company_a_id
   for update of ce;
 
-  select ce.rating, lower(c.slug), lower(c.name)
-  into b_rating, b_slug, b_name
+  select ce.rating
+  into b_rating
   from public.company_elo ce
-  join public.companies c on c.id = ce.company_id
   where ce.company_id = company_b_id
   for update of ce;
 
@@ -550,35 +542,11 @@ begin
   new_a := a_rating + effective_k * (score_a - exp_a);
   new_b := b_rating + effective_k * (score_b - exp_b);
 
+  -- Only apply global min/max caps (800 - 3100)
   new_a := least(3100, greatest(800, new_a));
   new_b := least(3100, greatest(800, new_b));
 
-  a_cap := null;
-  b_cap := null;
-
-  if coalesce(a_slug, '') like '%tesla%' or coalesce(a_name, '') like '%tesla%' then
-    a_cap := 1700;
-  elsif coalesce(a_slug, '') like '%tata%' or coalesce(a_name, '') like '%tata%' then
-    a_cap := 1300;
-  elsif coalesce(a_slug, '') like '%walmart%' or coalesce(a_name, '') like '%walmart%' then
-    a_cap := 1300;
-  end if;
-
-  if coalesce(b_slug, '') like '%tesla%' or coalesce(b_name, '') like '%tesla%' then
-    b_cap := 1700;
-  elsif coalesce(b_slug, '') like '%tata%' or coalesce(b_name, '') like '%tata%' then
-    b_cap := 1300;
-  elsif coalesce(b_slug, '') like '%walmart%' or coalesce(b_name, '') like '%walmart%' then
-    b_cap := 1300;
-  end if;
-
-  if a_cap is not null then
-    new_a := least(a_cap, new_a);
-  end if;
-
-  if b_cap is not null then
-    new_b := least(b_cap, new_b);
-  end if;
+  -- Company-specific caps removed - all companies follow same rules
 
   update public.company_elo as ce
     set rating = new_a,
@@ -657,32 +625,6 @@ begin
     join public.company_elo ce on ce.company_id = c.id
   ) ranks on ranks.id = ce.company_id
   where ce.company_id in (company_a_id, company_b_id);
-end;
-$$;
-
--- Enforce Elo caps for specific companies ------------------------------------
-
-do $$
-begin
-  update public.company_elo as ce
-  set rating = least(ce.rating, 1700)
-  from public.companies c
-  where c.id = ce.company_id
-    and (
-      lower(coalesce(c.slug, '')) like '%tesla%'
-      or lower(coalesce(c.name, '')) like '%tesla%'
-    );
-
-  update public.company_elo as ce
-  set rating = least(ce.rating, 1300)
-  from public.companies c
-  where c.id = ce.company_id
-    and (
-      lower(coalesce(c.slug, '')) like '%tata%'
-      or lower(coalesce(c.name, '')) like '%tata%'
-      or lower(coalesce(c.slug, '')) like '%walmart%'
-      or lower(coalesce(c.name, '')) like '%walmart%'
-    );
 end;
 $$;
 
