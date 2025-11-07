@@ -55,7 +55,7 @@ const Reviews = () => {
     <>
       <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
             Community Reviews
           </h1>
@@ -64,7 +64,7 @@ const Reviews = () => {
           </p>
         </div>
 
-        <div className="relative mb-8 max-w-md mx-auto">
+        <div className="relative mb-8 max-w-md md:max-w-lg lg:max-w-xl mx-auto">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search companies or tags..."
@@ -74,7 +74,7 @@ const Reviews = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredCompanies.map(company => {
             const logo = company.logoUrl ?? defaultLogo;
             const averageRating = company.averageReviewScore;

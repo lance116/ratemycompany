@@ -411,7 +411,7 @@ const CompanyDetails = () => {
   return (
     <>
       <div className="min-h-screen bg-background">
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8 space-y-4 sm:space-y-6">
         <Link
           to="/leaderboard"
           className="inline-flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -421,17 +421,17 @@ const CompanyDetails = () => {
         </Link>
 
         <Card>
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row md:items-start md:space-x-6 space-y-6 md:space-y-0">
+          <CardContent className="p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-start md:space-x-6 space-y-4 sm:space-y-6 md:space-y-0">
               <img
                 src={logo}
                 alt={company.name}
-                className="h-24 w-24 object-contain flex-shrink-0"
+                className="h-20 w-20 sm:h-24 sm:w-24 object-contain flex-shrink-0 mx-auto md:mx-0"
               />
               <div className="flex-grow space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-3xl font-bold text-foreground">{company.name}</h1>
-                  <Badge variant="outline" className="text-primary border-primary">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-center md:justify-start">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground break-words">{company.name}</h1>
+                  <Badge variant="outline" className="text-primary border-primary text-xs sm:text-sm">
                     #{rank}
                   </Badge>
                 </div>
@@ -443,72 +443,72 @@ const CompanyDetails = () => {
                     </Badge>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center">
                   <div>
                     <div className="flex items-center justify-center space-x-1">
-                      <Trophy className="h-5 w-5 text-primary" />
-                      <span className="text-2xl font-bold text-foreground">{company.elo}</span>
+                      <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="text-xl sm:text-2xl font-bold text-foreground break-words">{company.elo}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">ELO Rating</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">ELO Rating</span>
                   </div>
                   <div>
                     <div className="flex items-center justify-center space-x-1">
-                      <Star className="h-5 w-5 text-gold" />
-                      <span className="text-2xl font-bold text-foreground">
+                      <Star className="h-4 w-4 sm:h-5 sm:w-5 text-gold flex-shrink-0" />
+                      <span className="text-xl sm:text-2xl font-bold text-foreground break-words">
                         {averageRating !== null ? averageRating.toFixed(1) : "N/A"}
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">Overall Rating</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Overall Rating</span>
                   </div>
                   <div>
                     <div className="flex items-center justify-center space-x-1">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      <span className="text-2xl font-bold text-foreground">
+                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="text-xl sm:text-2xl font-bold text-foreground break-words whitespace-nowrap">
                         {eloDelta >= 0 ? `+${eloDelta}` : eloDelta}
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">ELO Trend</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">ELO Trend</span>
                   </div>
                   <div>
                     <div className="flex items-center justify-center space-x-1">
-                      <BarChart3 className="h-5 w-5 text-primary" />
-                      <span className="text-2xl font-bold text-foreground">
+                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="text-xl sm:text-2xl font-bold text-foreground break-words">
                         {peakRank ?? "-"}
                       </span>
                     </div>
-                    <span className="text-sm text-muted-foreground">Peak Rank</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Peak Rank</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-4 pt-4 border-t border-border">
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 pt-4 border-t border-border">
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground">Pay</span>
-                    <div className="text-lg font-semibold text-foreground">{company.payDisplay}</div>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Pay</span>
+                    <div className="text-base sm:text-lg font-semibold text-foreground break-words">{company.payDisplay}</div>
                   </div>
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground">Prestige</span>
-                    <div className="text-lg font-semibold text-foreground">
+                    <span className="text-xs sm:text-sm text-muted-foreground">Prestige</span>
+                    <div className="text-base sm:text-lg font-semibold text-foreground break-words">
                       {company.averagePrestige
                         ? `${company.averagePrestige.toFixed(1)}/10`
                         : "N/A"}
                     </div>
                   </div>
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground">Culture</span>
-                    <div className="text-lg font-semibold text-foreground">
+                    <span className="text-xs sm:text-sm text-muted-foreground">Culture</span>
+                    <div className="text-base sm:text-lg font-semibold text-foreground break-words">
                       {company.averageCulture ? `${company.averageCulture.toFixed(1)}/10` : "N/A"}
                     </div>
                   </div>
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground">Wins</span>
-                    <div className="text-lg font-semibold text-foreground">{company.wins}</div>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Wins</span>
+                    <div className="text-base sm:text-lg font-semibold text-foreground break-words">{company.wins}</div>
                   </div>
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground">Losses</span>
-                    <div className="text-lg font-semibold text-foreground">{company.losses}</div>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Losses</span>
+                    <div className="text-base sm:text-lg font-semibold text-foreground break-words">{company.losses}</div>
                   </div>
                   <div className="text-center">
-                    <span className="text-sm text-muted-foreground">Draws</span>
-                    <div className="text-lg font-semibold text-foreground">{company.draws}</div>
+                    <span className="text-xs sm:text-sm text-muted-foreground">Draws</span>
+                    <div className="text-base sm:text-lg font-semibold text-foreground break-words">{company.draws}</div>
                   </div>
                 </div>
               </div>

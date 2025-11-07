@@ -216,7 +216,7 @@ const Leaderboard = () => {
       <div className="relative min-h-screen overflow-hidden bg-white text-slate-950">
         <LeaderboardBackground />
         <div className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-4xl font-bold text-foreground mb-2">Company Leaderboard</h1>
             <p className="text-muted-foreground">
               Rankings based on community votes using the chess ELO rating system
@@ -224,7 +224,7 @@ const Leaderboard = () => {
           </div>
 
           <div className="mb-12">
-            <div className="grid grid-cols-3 gap-2 md:flex md:items-end md:justify-center md:space-x-6">
+            <div className="grid grid-cols-3 gap-3 md:flex md:items-end md:justify-center md:space-x-6">
               {[
                 {
                   company: podium[1],
@@ -263,7 +263,7 @@ const Leaderboard = () => {
           </div>
 
           <div className="relative mt-6">
-            <div className="relative z-20 mb-4 flex justify-start">
+            <div className="relative z-20 mb-4 flex justify-center md:justify-start">
               <div className="relative w-full max-w-xs" ref={suggestionRef}>
                 <SearchIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <input

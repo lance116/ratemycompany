@@ -523,7 +523,7 @@ const Vote = () => {
       <BackgroundCanvas />
       <div
         className={cn(
-          "relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 pt-0 pb-4 sm:py-12 sm:px-6 lg:px-8",
+          "relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-start sm:justify-center px-4 pt-4 pb-4 sm:py-12 sm:px-6 lg:px-8",
           layout.isCompact && "pt-4 pb-6",
           layout.isShortHeight && "sm:pt-9 sm:pb-10",
           layout.isTablet && "sm:px-8",
@@ -532,8 +532,8 @@ const Vote = () => {
       >
         <section
           className={cn(
-            "rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-3 pb-5 sm:py-7 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9",
-            layout.isCompact && "px-5 pb-4",
+            "rounded-[2rem] border border-slate-200/80 bg-white/80 px-6 pt-3 pb-2 sm:pt-7 sm:pb-3 text-center shadow-[0_28px_60px_-38px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:px-9",
+            layout.isCompact && "px-5 pb-1.5",
             layout.isShortHeight && "sm:py-6",
             layout.isTablet && "sm:px-10"
           )}
@@ -578,16 +578,16 @@ const Vote = () => {
 
         <section
           className={cn(
-            "mt-3 sm:mt-6 flex flex-1 flex-col justify-center",
-            layout.isCompact && "mt-4",
-            layout.isShortHeight && "sm:mt-5"
+            "mt-3 sm:mt-4 flex flex-col",
+            layout.isCompact && "mt-2",
+            layout.isShortHeight && "sm:mt-3"
           )}
         >
           <div
             className={cn(
-              "rounded-[2.5rem] border border-slate-200 bg-white/90 p-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:p-6 mb-6 sm:mb-8",
-              layout.isCompact && "rounded-[2rem] p-3 mb-5",
-              layout.isTablet && "sm:p-7"
+              "rounded-[2.5rem] border border-slate-200 bg-white/90 pt-2 px-4 pb-4 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.55)] backdrop-blur sm:pt-3 sm:px-6 sm:pb-6 mb-6 sm:mb-8",
+              layout.isCompact && "rounded-[2rem] pt-1.5 px-3 pb-3 mb-5",
+              layout.isTablet && "sm:pt-3 sm:px-7 sm:pb-7"
             )}
           >
             <div
@@ -629,7 +629,7 @@ const Vote = () => {
 
           <div
             className={cn(
-              "mt-3 sm:mt-2 flex items-center justify-center gap-3",
+              "mt-4 sm:mt-3 flex items-center justify-center gap-3",
               layout.isCompact && "mt-4 flex-col"
             )}
           >
@@ -669,7 +669,7 @@ const Vote = () => {
       <footer className="relative z-10 border-t border-slate-200/80 bg-white/85 w-full">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 text-slate-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           {/* Mobile branding */}
-          <div className="sm:hidden flex items-center gap-2 mb-4 w-full">
+          <div className="sm:hidden flex items-center gap-2 mb-3 w-full">
             <img src="/ratemycompany.png" alt="ratemycompany" className="h-8 w-8 object-contain flex-shrink-0" />
             <span className="font-bold text-foreground">ratemycompany.ca</span>
           </div>
@@ -846,7 +846,7 @@ const CompanyCard = ({
               <div
                 className={cn(
                   "flex flex-wrap items-baseline gap-2",
-                  sizeVariant === "compact" && "gap-1.5"
+                  sizeVariant === "compact" && "gap-1.5 justify-center"
                 )}
               >
                 <AnimatedStat
@@ -1077,7 +1077,7 @@ const AnimatedStat = ({
       label: "text-[9px] tracking-[0.34em]",
       value: "text-base",
       matrix: "text-base",
-      delta: "text-xs",
+      delta: "text-[0.7rem]",
       innerGap: "gap-1",
     },
     tablet: {
@@ -1157,7 +1157,7 @@ const AnimatedStat = ({
           )}
         </span>
         {showDelta && (
-          <span className={cn("font-semibold tabular-nums transition-opacity duration-200", deltaSize, deltaClass)}>
+          <span className={cn("font-semibold tabular-nums transition-opacity duration-200 whitespace-nowrap", deltaSize, deltaClass)}>
             {deltaRounded !== undefined
               ? deltaRounded > 0
                 ? `+${deltaRounded}`
