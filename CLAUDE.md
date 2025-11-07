@@ -974,6 +974,12 @@ SUPABASE_SERVICE_ROLE_KEY=<auto_provided>
    - New thresholds: 2400+ (K=16), 2600+ (K=12), 2800+ (K=10)
    - Makes rating changes more meaningful and responsive
 
+9. **20251107101000_fix_individual_k_factors.sql**
+   - **CRITICAL FIX**: Each player now uses their own K-factor based on their rating
+   - Previous bug: both players used same K (based on highest rating in match)
+   - Now matches chess Elo properly: low-rated player uses K=32, high-rated uses K=10
+   - Dramatically improves underdog victory rewards (e.g., 1200 beating 2800 now gives +32 instead of +10)
+
 **Current Schema**: `supabase/schema.sql` (complete schema export)
 
 **Migration Strategy**:

@@ -372,6 +372,8 @@ declare
   company_b_id uuid := company_b;
   a_rating numeric;
   b_rating numeric;
+  a_k numeric;
+  b_k numeric;
   exp_a numeric;
   exp_b numeric;
   score_a numeric;
@@ -383,7 +385,6 @@ declare
   ip_input inet := voter_ip;
   draw_streak integer := 0;
   forwarded_header text;
-  effective_k numeric := greatest(1, least(32, coalesce(k_factor, 32)));
   ip_recent_votes integer := 0;
   ip_company_recent integer := 0;
   submitter_recent integer := 0;
@@ -509,24 +510,34 @@ begin
   where ce.company_id = company_b_id
   for update of ce;
 
-  -- Adjusted K-factors more in line with chess
-  -- Chess: K=40 for new players, K=20 for active, K=10 for 2400+
-  -- We use: K=32 default, gradually reduce but never below K=10
+  -- Calculate K-factor for EACH player based on THEIR OWN rating
+  -- This is how chess Elo works - each player has their own K
 
-  if greatest(a_rating, b_rating) >= 2400 then
-    effective_k := least(effective_k, 16);
+  -- Company A's K-factor
+  a_k := coalesce(k_factor, 32);
+  if a_rating >= 2400 then
+    a_k := least(a_k, 16);
   end if;
-
-  if greatest(a_rating, b_rating) >= 2600 then
-    effective_k := least(effective_k, 12);
+  if a_rating >= 2600 then
+    a_k := least(a_k, 12);
   end if;
-
-  if greatest(a_rating, b_rating) >= 2800 then
-    effective_k := least(effective_k, 10);
+  if a_rating >= 2800 then
+    a_k := least(a_k, 10);
   end if;
+  a_k := greatest(a_k, 10);
 
-  -- Never drop below K=10 (chess minimum)
-  effective_k := greatest(effective_k, 10);
+  -- Company B's K-factor
+  b_k := coalesce(k_factor, 32);
+  if b_rating >= 2400 then
+    b_k := least(b_k, 16);
+  end if;
+  if b_rating >= 2600 then
+    b_k := least(b_k, 12);
+  end if;
+  if b_rating >= 2800 then
+    b_k := least(b_k, 10);
+  end if;
+  b_k := greatest(b_k, 10);
 
   exp_a := 1 / (1 + power(10, (b_rating - a_rating) / 400));
   exp_b := 1 / (1 + power(10, (a_rating - b_rating) / 400));
@@ -542,8 +553,9 @@ begin
     score_b := 1;
   end if;
 
-  new_a := a_rating + effective_k * (score_a - exp_a);
-  new_b := b_rating + effective_k * (score_b - exp_b);
+  -- Each player uses THEIR OWN K-factor
+  new_a := a_rating + a_k * (score_a - exp_a);
+  new_b := b_rating + b_k * (score_b - exp_b);
 
   -- Only apply global min/max caps (800 - 3100)
   new_a := least(3100, greatest(800, new_a));
