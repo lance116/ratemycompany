@@ -8,6 +8,10 @@ import Vote from "./pages/Vote";
 import Leaderboard from "./pages/Leaderboard";
 import Reviews from "./pages/Reviews";
 import CompanyDetails from "./pages/CompanyDetails";
+import StartupVote from "./pages/startups/Vote";
+import StartupLeaderboard from "./pages/startups/Leaderboard";
+import StartupReviews from "./pages/startups/Reviews";
+import StartupCompanyDetails from "./pages/startups/CompanyDetails";
 import NotFound from "./pages/NotFound";
 import { SupabaseAuthProvider } from "./providers/SupabaseAuthProvider";
 
@@ -23,11 +27,24 @@ const App = () => {
           <BrowserRouter>
             <Navigation />
             <Routes>
-              <Route path="/" element={<Vote />} />
+              {/* Default route redirects to startups */}
+              <Route path="/" element={<Navigate to="/startups/vote" replace />} />
+
+              {/* Startup routes */}
+              <Route path="/startups/vote" element={<StartupVote />} />
+              <Route path="/startups/leaderboard" element={<StartupLeaderboard />} />
+              <Route path="/startups/reviews" element={<StartupReviews />} />
+              <Route path="/startups/company/:id" element={<StartupCompanyDetails />} />
+
+              {/* Big Tech routes */}
+              <Route path="/vote" element={<Vote />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/company/:id" element={<CompanyDetails />} />
-              <Route path="/auth/callback" element={<Navigate to="/" replace />} />
+
+              {/* Auth callback */}
+              <Route path="/auth/callback" element={<Navigate to="/startups/vote" replace />} />
+
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
