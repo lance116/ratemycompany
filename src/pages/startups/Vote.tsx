@@ -12,6 +12,7 @@ import {
   VoteMatchupStartup,
   VoteMatchupPayload,
 } from "@/data/startups";
+import { fetchTotalVotes } from "@/lib/voteCounter";
 
 const VOTE_SESSION_STORAGE_KEY = "vote:sessionToken";
 
@@ -209,17 +210,25 @@ const Vote = () => {
     staleTime: 0,
   });
 
+  // Fetch combined vote count (big tech + startups)
+  const { data: totalVotesData } = useQuery({
+    queryKey: ["total-votes"],
+    queryFn: fetchTotalVotes,
+    staleTime: 1000 * 30, // 30 seconds
+  });
+
   useEffect(() => {
     if (data) {
       setCompanies(data.companies);
-      setVoteCount(typeof data.totalVotes === "number" ? data.totalVotes : 0);
+      // Use combined vote count if available, otherwise fallback to startup-only count
+      setVoteCount(typeof totalVotesData === "number" ? totalVotesData : (typeof data.totalVotes === "number" ? data.totalVotes : 0));
       setSelection(null);
       setStatDeltas({});
       setStatTriggers({});
       setMutationError(null);
       setVoteLocked(false);
     }
-  }, [data]);
+  }, [data, totalVotesData]);
 
   useEffect(
     () => () => {
