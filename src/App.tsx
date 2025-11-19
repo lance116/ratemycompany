@@ -27,8 +27,8 @@ const App = () => {
           <BrowserRouter>
             <Navigation />
             <Routes>
-              {/* Default route redirects to startups */}
-              <Route path="/" element={<Navigate to="/startups/vote" replace />} />
+              {/* Default route redirects to big tech */}
+              <Route path="/" element={<Navigate to="/vote" replace />} />
 
               {/* Startup routes */}
               <Route path="/startups/vote" element={<StartupVote />} />
@@ -43,7 +43,7 @@ const App = () => {
               <Route path="/company/:id" element={<CompanyDetails />} />
 
               {/* Auth callback */}
-              <Route path="/auth/callback" element={<Navigate to="/startups/vote" replace />} />
+              <Route path="/auth/callback" element={<Navigate to="/vote" replace />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
