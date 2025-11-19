@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { getStartupLogoUrl } from "@/lib/startupLogos";
 
 export interface LatestReviewSummary {
   body: string;
@@ -103,7 +104,7 @@ const mapLeaderboardRow = (row: any): LeaderboardStartup => {
     slug: row.slug ?? null,
     description: row.description ?? null,
     tags: row.tags ?? [],
-    logoUrl: row.logo_url ?? null,
+    logoUrl: getStartupLogoUrl(row.name, row.logo_url ?? null),
     elo: Math.round(Number(row.rating ?? 0)),
     rank: row.rank ?? 0,
     matchesPlayed: row.matches_played ?? 0,
@@ -365,7 +366,7 @@ export const fetchStartupVoteMatchup = async (): Promise<VoteMatchupPayload> => 
   const companies = (data ?? []).map((row: any) => ({
     id: row.id,
     name: row.name,
-    logoUrl: row.logo_url ?? null,
+    logoUrl: getStartupLogoUrl(row.name, row.logo_url ?? null),
     tags: Array.isArray(row.tags)
       ? row.tags.map((tag: string) => tag.toUpperCase())
       : [],
