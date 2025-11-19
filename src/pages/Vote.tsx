@@ -238,6 +238,7 @@ const Vote = () => {
       setMutationError(null);
       setVoteLocked(false);
       queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["total-votes"] });
       rows.forEach((row) => {
         queryClient.invalidateQueries({ queryKey: ["company", row.company_id] });
         queryClient.invalidateQueries({ queryKey: ["companyEloHistory", row.company_id] });

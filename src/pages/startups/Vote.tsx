@@ -247,6 +247,7 @@ const Vote = () => {
       setMutationError(null);
       setVoteLocked(false);
       queryClient.invalidateQueries({ queryKey: ["startup-leaderboard"] });
+      queryClient.invalidateQueries({ queryKey: ["total-votes"] });
       rows.forEach((row) => {
         queryClient.invalidateQueries({ queryKey: ["startup", row.company_id] });
         queryClient.invalidateQueries({ queryKey: ["startupEloHistory", row.company_id] });
