@@ -25,3 +25,6 @@ dist-ssr
 
 # Supabase local metadata
 supabase/.temp/
+
+# Scripts with sensitive keys
+update-logos-direct.js
